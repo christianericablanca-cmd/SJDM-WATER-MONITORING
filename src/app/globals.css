@@ -84,6 +84,7 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
   }
 
   body {
@@ -116,7 +117,7 @@
 
 @layer components {
   .page-container {
-    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+    @apply max-w-7xl xl:max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8;
   }
 
   .section-title {
@@ -188,9 +189,9 @@
   border: none !important;
 }
 
-/* Mobile tap targets */
+/* Mobile tap targets — scope to primary interactions, not inline/admin elements */
 @media (max-width: 640px) {
-  button, a, select, input, textarea {
+  .tap-target, .page-container button:not([class*="h-7"]):not([class*="h-6"]):not([class*="h-5"]):not([class*="h-8"]), .page-container a[class*="btn"], .page-container select, .page-container input:not([class*="h-8"]):not([class*="h-7"]), .page-container textarea {
     min-height: 44px;
   }
 

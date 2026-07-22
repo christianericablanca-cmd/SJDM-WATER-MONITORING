@@ -7,11 +7,14 @@ import {
   BookOpen, ClipboardList, Eye, ThumbsUp, Search, CheckCircle2, Clock, RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/components/ui/language-provider";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const STORAGE_KEY = "ww-disclaim-accepted";
 
 export function DisclaimPopover() {
+  const { lang } = useLanguage();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -38,20 +41,20 @@ export function DisclaimPopover() {
             <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 flex items-center justify-center mx-auto">
               <AlertTriangle className="h-5 w-5 text-amber-600" />
             </div>
-            <h2 className="text-base font-bold">Before You Continue</h2>
-            <p className="text-xs text-muted-foreground">Important notices about this platform</p>
+            <h2 className="text-base font-bold">{t("Before You Continue", lang)}</h2>
+            <p className="text-xs text-muted-foreground">{t("Important notices about this platform", lang)}</p>
           </div>
 
           {/* ── Disclaimer Content ── */}
           <div className="space-y-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
             <NoticeBox icon={Shield} variant="amber">
-              <strong>Independent platform.</strong> WaterWatch SJDM is not affiliated with PrimeWater, Metro Pacific Bulacan Water, the City Government of San Jose del Monte, or any government agency.
+              <strong>{t("Independent platform.", lang)}</strong>{" "}{t("WaterWatch SJDM is not affiliated with PrimeWater, Metro Pacific Bulacan Water, the City Government of San Jose del Monte, or any government agency.", lang)}
             </NoticeBox>
             <NoticeBox icon={Mail} variant="blue">
-              <strong>Reports are forwarded.</strong> Verified reports are manually sent by the system admin to water provider email addresses and contact numbers. This is not an official reporting channel.
+              <strong>{t("Reports are forwarded.", lang)}</strong>{" "}{t("Verified reports are manually sent by the system admin to water provider email addresses and contact numbers. This is not an official reporting channel.", lang)}
             </NoticeBox>
             <NoticeBox icon={Info} variant="muted">
-              <strong>Community-sourced.</strong> All reports are submitted by community members. Reports undergo admin review before appearing on the public map to filter out unverified or false claims.
+              <strong>{t("Community-sourced.", lang)}</strong>{" "}{t("All reports are submitted by community members. Reports undergo admin review before appearing on the public map to filter out unverified or false claims.", lang)}
             </NoticeBox>
           </div>
 
@@ -60,56 +63,56 @@ export function DisclaimPopover() {
             <div className="w-10 h-10 rounded-xl bg-water-muted flex items-center justify-center mx-auto">
               <BookOpen className="h-5 w-5 text-water" />
             </div>
-            <h2 className="text-base font-bold">How It Works</h2>
-            <p className="text-xs text-muted-foreground">Everything you need to know in one place</p>
+            <h2 className="text-base font-bold">{t("How It Works", lang)}</h2>
+            <p className="text-xs text-muted-foreground">{t("Everything you need to know in one place", lang)}</p>
           </div>
 
           {/* ── How-To Steps ── */}
           <div className="space-y-4">
-            <Step icon={ClipboardList} title="Submit a Report" color="text-water bg-water-muted">
-              Select your barangay, issue type, and water provider. <strong>Share your GPS location</strong> (required). Add a description, photo, and when it started. <strong>No account needed</strong> — completely anonymous.
+            <Step icon={ClipboardList} title={t("Submit a Report", lang)} color="text-water bg-water-muted">
+              {t("Select your barangay, issue type, and water provider. Share your GPS location (required). Add a description, photo, and when it started. No account needed — completely anonymous.", lang)}
             </Step>
 
-            <Step icon={Eye} title="Admin Review" color="text-amber-600 bg-amber-50 dark:bg-amber-950/20">
-              An admin reviews your report. If <strong>approved</strong>, it appears on the public Water Map. If <strong>denied</strong>, you'll see the reason. This keeps the map free of spam and false claims.
+            <Step icon={Eye} title={t("Admin Review", lang)} color="text-amber-600 bg-amber-50 dark:bg-amber-950/20">
+              {t("An admin reviews your report. If approved, it appears on the public Water Map. If denied, you'll see the reason. This keeps the map free of spam and false claims.", lang)}
             </Step>
 
-            <Step icon={ThumbsUp} title="Community Confirmation" color="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
-              Other residents click <strong>"I have this too"</strong> to confirm the issue. More confirmations = higher confidence the problem is real and widespread. No account required to confirm.
+            <Step icon={ThumbsUp} title={t("Community Confirmation", lang)} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
+              {t('Other residents click "I have this too" to confirm the issue. More confirmations = higher confidence the problem is real and widespread. No account required to confirm.', lang)}
             </Step>
 
-            <Step icon={Search} title="Track Your Report" color="text-blue-600 bg-blue-50 dark:bg-blue-950/20">
-              Save your <strong>Report ID</strong> (e.g. SJDM-WATER-00042) to check its status anytime. Visit the Submit Report page and enter it in the tracker. You'll see the full progress: <strong>Submitted → Under Review → Approved → Resolved → Inactive</strong>.
+            <Step icon={Search} title={t("Track Your Report", lang)} color="text-blue-600 bg-blue-50 dark:bg-blue-950/20">
+              {t("Save your Report ID (e.g. SJDM-WATER-00042) to check its status anytime. Visit the Submit Report page and enter it in the tracker. You'll see the full progress: Submitted → Under Review → Approved → Resolved → Inactive.", lang)}
             </Step>
 
-            <Step icon={CheckCircle2} title="Mark as Resolved" color="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
-              When water is back, visit your report and click <strong>"Mark as Resolved"</strong>. This tells the community the issue is fixed. Limited to 3 resolves per hour.
+            <Step icon={CheckCircle2} title={t("Mark as Resolved", lang)} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
+              {t('When water is back, visit your report and click "Mark as Resolved". This tells the community the issue is fixed. Limited to 3 resolves per hour.', lang)}
             </Step>
 
-            <Step icon={Clock} title="Inactive After 7 Days" color="text-purple-600 bg-purple-50 dark:bg-purple-950/20">
-              Reports with <strong>no new confirmations or updates for 7 days</strong> automatically become <strong>inactive</strong>. They stay visible but are marked inactive on the map.
+            <Step icon={Clock} title={t("Inactive After 7 Days", lang)} color="text-purple-600 bg-purple-50 dark:bg-purple-950/20">
+              {t("Reports with no new confirmations or updates for 7 days automatically become inactive. They stay visible but are marked inactive on the map.", lang)}
             </Step>
 
-            <Step icon={RefreshCw} title="Reactivation" color="text-orange-600 bg-orange-50 dark:bg-orange-950/20">
-              If an inactive or resolved issue comes back: <strong>submit a new report at the same location</strong> and it auto-reactivates. Or enter your old Report ID on the track page. Limited to once per 24 hours.
+            <Step icon={RefreshCw} title={t("Reactivation", lang)} color="text-orange-600 bg-orange-50 dark:bg-orange-950/20">
+              {t("If an inactive or resolved issue comes back: submit a new report at the same location and it auto-reactivates. Or enter your old Report ID on the track page. Limited to once per 24 hours.", lang)}
             </Step>
 
-            <Step icon={Shield} title="Privacy & Limits" color="text-gray-600 bg-gray-50 dark:bg-gray-800">
-              Your exact address is <strong>never shared</strong> — only an approximate map pin. Rate limits: 3 reports/hour, 10 confirmations/hour. This is an independent community platform.
+            <Step icon={Shield} title={t("Privacy & Limits", lang)} color="text-gray-600 bg-gray-50 dark:bg-gray-800">
+              {t("Your exact address is never shared — only an approximate map pin. Rate limits: 3 reports/hour, 10 confirmations/hour. This is an independent community platform.", lang)}
             </Step>
           </div>
 
           {/* ── Dismiss ── */}
           <div className="space-y-2.5 pt-1">
             <Button onClick={dismiss} className="w-full h-11 text-sm">
-              I Understand — Don't Show Again
+              {t("I Understand — Don't Show Again", lang)}
             </Button>
             <button
               type="button"
               onClick={() => setVisible(false)}
               className="w-full h-11 text-xs text-muted-foreground hover:text-foreground rounded-lg border transition-colors"
             >
-              Keep Reminding Me
+              {t("Keep Reminding Me", lang)}
             </button>
             <p className="text-center">
               <Link
@@ -117,7 +120,7 @@ export function DisclaimPopover() {
                 onClick={dismiss}
                 className="text-[11px] text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
               >
-                Read full disclaimer <ExternalLink className="h-3 w-3" />
+                {t("Read full disclaimer", lang)} <ExternalLink className="h-3 w-3" />
               </Link>
             </p>
           </div>

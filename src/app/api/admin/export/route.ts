@@ -32,7 +32,8 @@ export async function GET(request: Request) {
   const providerLabel = (v: string) => WATER_PROVIDERS.find((p) => p.value === v)?.label || v;
   const issueLabel = (v: string) => ISSUE_TYPES.find((t) => t.value === v)?.label || v;
   const statusLabel: Record<string, string> = {
-    submitted: "Submitted", under_review: "Under Review", community_confirmed: "Community Confirmed", resolved: "Resolved",
+    submitted: "Submitted", under_review: "Under Review", approved: "Approved", denied: "Denied",
+    community_confirmed: "Community Confirmed", resolved: "Resolved", stale: "Inactive",
   };
   const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString("en-PH") : "";
 

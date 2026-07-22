@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
-import { Menu, X, Droplets } from "lucide-react";
+import { Droplets, Sun, Moon, Languages } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/components/ui/theme-provider";
+import { useLanguage } from "@/components/ui/language-provider";
+import { t } from "@/lib/i18n";
 
 const NAV_ITEMS = [
   { label: "Water Map", href: "/map" },
@@ -17,7 +19,10 @@ const NAV_ITEMS = [
 
 export function Header() {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  const { resolved, setTheme } = useTheme();
+  const { lang, setLang } = useLanguage();
+
+  if (pathname.startsWith("/admin")) return null;
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b safe-top">
@@ -47,62 +52,44 @@ export function Header() {
                       : "text-muted-foreground hover:text-foreground hover:bg-secondary",
                   )}
                 >
-                  {item.label}
+                  {t(item.label, lang)}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="flex items-center gap-2">
-            <Button variant="default" size="sm" className="hidden sm:inline-flex shadow-sm h-9 min-h-[44px] sm:min-h-[36px]" asChild>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setLang(lang === "en" ? "tl" : "en")}
+              className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors relative"
+              aria-label="Toggle language"
+              title={lang === "en" ? "Tagalog" : "English"}
+            >
+              <Languages className="h-4.5 w-4.5" />
+              <span className="absolute text-[8px] font-bold bottom-0.5 right-0.5 leading-none">
+                {lang === "en" ? "EN" : "TL"}
+              </span>
+            </button>
+            <button
+              onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+              className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors"
+              aria-label="Toggle theme"
+            >
+              {resolved === "dark" ? (
+                <Sun className="h-4.5 w-4.5" />
+              ) : (
+                <Moon className="h-4.5 w-4.5" />
+              )}
+            </button>
+            <Button variant="default" size="sm" className="hidden md:inline-flex shadow-sm h-9 min-h-[44px]" asChild>
               <Link href="/report">
                 <Droplets className="h-3.5 w-3.5 mr-1.5" />
-                Report Issue
+                {t("Report Issue", lang)}
               </Link>
             </Button>
-            <button
-              onClick={() => setOpen(!open)}
-              className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg hover:bg-secondary transition-colors"
-              aria-label={open ? "Close menu" : "Open menu"}
-            >
-              {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
           </div>
         </div>
       </div>
-
-      {open && (
-        <div className="md:hidden border-t bg-background/95 backdrop-blur-xl max-h-[calc(100vh-3.5rem)] overflow-y-auto">
-          <nav className="page-container py-2 space-y-0.5">
-            {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors min-h-[48px]",
-                    active
-                      ? "bg-water-muted text-water-dark dark:text-water"
-                      : "text-muted-foreground hover:text-foreground hover:bg-secondary",
-                  )}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-            <div className="pt-2 pb-4">
-              <Button variant="default" size="lg" className="w-full min-h-[48px] text-sm" asChild>
-                <Link href="/report" onClick={() => setOpen(false)}>
-                  <Droplets className="h-4 w-4 mr-2" />
-                  Report Issue
-                </Link>
-              </Button>
-            </div>
-          </nav>
-        </div>
-      )}
     </header>
   );
 }

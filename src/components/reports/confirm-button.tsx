@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { ThumbsUp, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/components/ui/toast-provider";
+import { useLanguage } from "@/components/ui/language-provider";
+import { t } from "@/lib/i18n";
 
 interface ConfirmButtonProps {
   reportId: string;
@@ -12,6 +14,7 @@ interface ConfirmButtonProps {
 }
 
 export function ConfirmButton({ reportId, initialCount }: ConfirmButtonProps) {
+  const { lang } = useLanguage();
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
   const [count, setCount] = useState(initialCount);
   const [confirmed, setConfirmed] = useState(false);
@@ -39,24 +42,24 @@ export function ConfirmButton({ reportId, initialCount }: ConfirmButtonProps) {
         setConfirmed(true);
         sessionStorage.setItem(`confirmed_${reportId}`, "true");
         if (data.re_activated) {
-          toastSuccess("Re-activated!", "This report was marked resolved but your confirmation brought it back. Neighbors still need help!");
+          toastSuccess(t("Re-activated!", lang), t("This report was marked resolved but your confirmation brought it back. Neighbors still need help!", lang));
         } else {
-          toastSuccess("Confirmed!", "Thanks for helping verify this report. The community confidence has been updated.");
+          toastSuccess(t("Confirmed!", lang), t("Thanks for helping verify this report. The community confidence has been updated.", lang));
         }
       } else if (res.status === 429) {
-        toastError("Too many confirmations", "Please wait a moment before confirming more reports.");
+        toastError(t("Too many confirmations", lang), t("Please wait a moment before confirming more reports.", lang));
       } else {
         const data = await res.json();
         if (data.message === "Already confirmed") {
           setConfirmed(true);
           sessionStorage.setItem(`confirmed_${reportId}`, "true");
-          toastInfo("Already confirmed", "You've already confirmed this report.");
+          toastInfo(t("Already confirmed", lang), t("You've already confirmed this report.", lang));
         } else {
           throw new Error(data.error || "Something went wrong");
         }
       }
     } catch (err: any) {
-      toastError("Couldn't confirm", err.message || "Please check your connection and try again.");
+      toastError(t("Couldn't confirm", lang), err.message || t("Please check your connection and try again.", lang));
     } finally {
       setLoading(false);
     }
@@ -80,7 +83,7 @@ export function ConfirmButton({ reportId, initialCount }: ConfirmButtonProps) {
         <ThumbsUp className={cn("h-3.5 w-3.5", confirmed && "fill-current")} />
       )}
       {!loading && count > 0 && <span className="tabular-nums">{count}</span>}
-      {confirmed ? "Confirmed" : "I have this too"}
+      {confirmed ? t("Confirmed", lang) : t("I have this too", lang)}
     </Button>
   );
 }

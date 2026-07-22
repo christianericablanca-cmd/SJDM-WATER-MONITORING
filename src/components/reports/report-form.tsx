@@ -11,6 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BARANGAYS, ISSUE_TYPES, BARANGAY_COORDS, WATER_PROVIDERS } from "@/lib/constants";
 import { Turnstile } from "@/components/reports/turnstile";
 import { useToast } from "@/components/ui/toast-provider";
+import { useLanguage } from "@/components/ui/language-provider";
+import { t } from "@/lib/i18n";
 import { Loader2, MapPin, Upload, CheckCircle2, AlertCircle, Droplets, ArrowLeft, ArrowRight, Shield, LocateFixed, Clock } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -46,7 +48,6 @@ function compressImage(file: File, maxSize = 1200, quality = 0.8): Promise<Blob>
 }
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
-const STEPS = ["Location & Issue", "Details", "Review & Submit"];
 
 interface FieldErrors {
   barangay?: string;
@@ -61,7 +62,9 @@ interface FieldErrors {
 
 export function ReportForm() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const { success: toastSuccess, error: toastError, info: toastInfo } = useToast();
+  const STEPS = [t("Location & Issue", lang), t("Details", lang), t("Review & Submit", lang)];
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState<string | null>(null);
@@ -94,23 +97,23 @@ export function ReportForm() {
 
   const validate = useCallback((): FieldErrors => {
     const e: FieldErrors = {};
-    if (!barangay) e.barangay = "Please select your barangay";
-    if (!issueType) e.issue_type = "Please select the type of water issue";
-    if (issueType === "other" && !customIssue.trim()) e.custom_issue = "Please describe the issue";
-    if (!waterProvider) e.water_provider = "Please select your water provider";
-    if (!startDate) e.start_date = "When did the issue start?";
-    if (!startTime) e.start_time = "What time did it start?";
-    if (!lat || !lng) e.location = "Please share your GPS location to place the pin accurately";
-    if (photo && photo.size > 2 * 1024 * 1024) e.photo = "Photo must be under 2MB";
+    if (!barangay) e.barangay = t("Please select your barangay", lang);
+    if (!issueType) e.issue_type = t("Please select the type of water issue", lang);
+    if (issueType === "other" && !customIssue.trim()) e.custom_issue = t("Please describe the issue", lang);
+    if (!waterProvider) e.water_provider = t("Please select your water provider", lang);
+    if (!startDate) e.start_date = t("When did the issue start?", lang);
+    if (!startTime) e.start_time = t("What time did it start?", lang);
+    if (!lat || !lng) e.location = t("Please share your GPS location to place the pin accurately", lang);
+    if (photo && photo.size > 2 * 1024 * 1024) e.photo = t("Photo must be under 2MB", lang);
     if (photo && !["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
-      e.photo = "Only JPG, PNG, or WEBP files are allowed";
+      e.photo = t("Only JPG, PNG, or WEBP files are allowed", lang);
     }
     return e;
   }, [barangay, issueType, customIssue, waterProvider, startDate, startTime, photo, lat, lng]);
 
   const handleLocationPick = () => {
     if (!navigator.geolocation) {
-      toastError("Location unavailable", "Geolocation is not supported by your browser. Try using a different browser.");
+      toastError(t("Location unavailable", lang), t("Geolocation is not supported by your browser. Try using a different browser.", lang));
       return;
     }
     setShowConsentDialog(true);
@@ -124,11 +127,11 @@ export function ReportForm() {
         setLat(pos.coords.latitude);
         setLng(pos.coords.longitude);
         setLocating(false);
-        toastSuccess("Location set", "Your approximate location has been added to the report.");
+        toastSuccess(t("Location set", lang), t("Your approximate location has been added to the report.", lang));
       },
       () => {
         setLocating(false);
-        toastError("Could not get location", "Please enable location services in your browser settings and try again.");
+        toastError(t("Could not get location", lang), t("Please enable location services in your browser settings and try again.", lang));
       },
       { timeout: 10000 },
     );
@@ -145,14 +148,14 @@ export function ReportForm() {
     const v = validate();
     if (step === 0 && (v.barangay || v.issue_type || v.water_provider || v.location || v.custom_issue)) {
       setErrors(v);
-      toastError("Missing information", "Please fill in all required fields before continuing.");
+      toastError(t("Missing information", lang), t("Please fill in all required fields before continuing.", lang));
       return;
     }
     if (step === 1) {
       markTouched("start_date", "start_time");
       if (v.start_date || v.start_time) {
         setErrors(v);
-        toastError("Missing information", "Please provide when the issue started.");
+        toastError(t("Missing information", lang), t("Please provide when the issue started.", lang));
         return;
       }
     }
@@ -164,18 +167,18 @@ export function ReportForm() {
     const v = validate();
     setErrors(v);
     if (Object.keys(v).length > 0) {
-      toastError("Please fix errors", "Check the highlighted fields before submitting.");
+      toastError(t("Please fix errors", lang), t("Check the highlighted fields before submitting.", lang));
       return;
     }
 
     setLoading(true);
-    toastInfo("Submitting report…", "Please wait while we process your report.");
+    toastInfo(t("Submitting report…", lang), t("Please wait while we process your report.", lang));
 
     try {
       let photoUrl: string | null = null;
 
       if (photo) {
-        toastInfo("Compressing photo…", "Please wait while we optimize your image.");
+        toastInfo(t("Compressing photo…", lang), t("Please wait while we optimize your image.", lang));
         const compressed = await compressImage(photo, 1024, 0.7);
         const formData = new FormData();
         formData.append("file", compressed, "photo.jpg");
@@ -212,7 +215,7 @@ export function ReportForm() {
 
       if (!res.ok) {
         if (res.status === 429) {
-          toastError("Rate limit reached", "Maximum 3 reports per hour. Please try again later.");
+          toastError(t("Rate limit reached", lang), t("Maximum 3 reports per hour. Please try again later.", lang));
         } else {
           throw new Error(data.error || "Something went wrong");
         }
@@ -220,11 +223,11 @@ export function ReportForm() {
         return;
       }
 
-      toastSuccess("Report submitted!", `Your report ID is ${data.report_id_display}. It's now subject for validation.`);
+      toastSuccess(t("Report submitted!", lang), t("Your report ID is", lang) + " " + data.report_id_display + ". " + t("It's now subject for validation.", lang));
       setSubmitted(data.report_id_display);
       router.refresh();
     } catch (err: any) {
-      toastError("Submission failed", err.message || "Please check your connection and try again.");
+      toastError(t("Submission failed", lang), err.message || t("Please check your connection and try again.", lang));
       setLoading(false);
     }
   };
@@ -235,27 +238,27 @@ export function ReportForm() {
         <div className="w-16 h-16 rounded-2xl bg-success/10 flex items-center justify-center mx-auto mb-6">
           <CheckCircle2 className="h-8 w-8 text-success" />
         </div>
-        <h2 className="text-2xl font-bold mb-2">Report Submitted!</h2>
+        <h2 className="text-2xl font-bold mb-2">{t("Report Submitted!", lang)}</h2>
         <p className="text-muted-foreground mb-2">
-          Your report has been received and is now subject for validation.
+          {t("Your report has been received and is now subject for validation.", lang)}
         </p>
         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-4 text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2.5 text-left">
           <Shield className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>Your report will appear on the community map once it has been reviewed and approved by an admin. This helps ensure only verified reports are shown to the public.</span>
+          <span>{t("Your report will appear on the community map once it has been reviewed and approved by an admin. This helps ensure only verified reports are shown to the public.", lang)}</span>
         </div>
         <div className="bg-water-muted/50 rounded-xl p-5 border border-water/20 mb-6">
-          <p className="text-xs text-muted-foreground mb-1">Your Report ID</p>
+          <p className="text-xs text-muted-foreground mb-1">{t("Your Report ID", lang)}</p>
           <p className="text-xl font-bold text-water">{submitted}</p>
           <p className="text-[11px] text-muted-foreground mt-2">
-            Save this ID to track your report status later.
+            {t("Save this ID to track your report status later.", lang)}
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 justify-center">
           <Button variant="outline" onClick={() => router.push("/report/" + submitted.split("-").pop())}>
-            Track Status
+            {t("Track Status", lang)}
           </Button>
           <Button variant="outline" onClick={() => router.push("/map")}>
-            View Reports
+            {t("View Reports", lang)}
           </Button>
         </div>
       </div>
@@ -279,6 +282,7 @@ export function ReportForm() {
               )}>
                 {i < step ? "✓" : i + 1}
               </span>
+              <span className="sm:hidden text-xs font-medium">Step {i + 1}</span>
               <span className="hidden sm:inline">{s}</span>
             </div>
             {i < STEPS.length - 1 && (
@@ -296,14 +300,14 @@ export function ReportForm() {
             </div>
             <div>
               <CardTitle className="text-lg">
-                {step === 0 && "Where and what?"}
-                {step === 1 && "When did it start?"}
-                {step === 2 && "Review your report"}
+                {step === 0 && t("Where and what?", lang)}
+                {step === 1 && t("When did it start?", lang)}
+                {step === 2 && t("Review your report", lang)}
               </CardTitle>
               <CardDescription>
-                {step === 0 && "Tell us where the issue is and what type of water problem you're experiencing."}
-                {step === 1 && "When did the issue start? Any additional details help the community."}
-                {step === 2 && "Please check everything is correct before submitting."}
+                {step === 0 && t("Tell us where the issue is and what type of water problem you're experiencing.", lang)}
+                {step === 1 && t("When did the issue start? Any additional details help the community.", lang)}
+                {step === 2 && t("Please check everything is correct before submitting.", lang)}
               </CardDescription>
             </div>
           </div>
@@ -312,10 +316,10 @@ export function ReportForm() {
           {step === 0 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="space-y-1.5">
-                <Label htmlFor="barangay">Barangay <span className="text-destructive">*</span></Label>
+                <Label htmlFor="barangay">{t("Barangay", lang)} <span className="text-destructive">*</span></Label>
                 <Select value={barangay} onValueChange={(v) => { setBarangay(v); setErrors((e) => ({ ...e, barangay: undefined })); }}>
                   <SelectTrigger id="barangay" className={cn("h-10", errors.barangay && touched.has("barangay") && "border-destructive")}>
-                    <SelectValue placeholder="Select your barangay" />
+                    <SelectValue placeholder={t("Select barangay", lang)} />
                   </SelectTrigger>
                   <SelectContent>
                     {BARANGAYS.map((b) => (
@@ -330,37 +334,37 @@ export function ReportForm() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label>Pin Location <span className="text-destructive">*</span></Label>
+                <Label>{t("Pin Location", lang)} <span className="text-destructive">*</span></Label>
                 <Button type="button" variant={lat && lng ? "default" : "outline"} onClick={handleLocationPick} disabled={locating}
                   className={cn(
                     "w-full h-12 justify-start gap-3 text-sm font-medium transition-all",
                     lat && lng ? "bg-water text-white hover:bg-water-dark border-water shadow-sm" : "border-2 border-dashed hover:border-water/60 hover:bg-water-muted/30",
                   )}>
                   <MapPin className={cn("h-5 w-5", locating && "animate-pulse")} />
-                  {locating ? "Getting your location…" :
-                    lat && lng ? `📍 Pin set ✓` : "📌 Tap to drop a pin at your location"}
+                  {locating ? t("Getting your location…", lang) :
+                    lat && lng ? t("📍 Pin set ✓", lang) : t("📌 Tap to drop a pin at your location", lang)}
                 </Button>
                 {lat && lng ? (
                   <p className="text-[11px] text-water-dark flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> Pin coordinates: {lat.toFixed(5)}, {lng.toFixed(5)}
+                    <CheckCircle2 className="h-3 w-3" /> {t("Pin coordinates:", lang)} {lat.toFixed(5)}, {lng.toFixed(5)}
                   </p>
                 ) : (
                   <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-start gap-1">
                     <AlertCircle className="h-3 w-3 shrink-0 mt-0.25" />
-                    <span>GPS pin is <strong>required</strong>. You must share your location for accurate placement of the report marker.</span>
+                    <span>{t("GPS pin is required. You must share your location for accurate placement of the report marker.", lang)}</span>
                   </p>
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="street">Street / Sitio <span className="text-muted-foreground text-xs">(optional)</span></Label>
+                <Label htmlFor="street">{t("Street / Sitio", lang)} <span className="text-muted-foreground text-xs">{t("(optional)", lang)}</span></Label>
                 <Input id="street" value={street} onChange={(e) => setStreet(e.target.value)}
-                  placeholder="e.g. Block 1, Lot 5 — helps others locate the issue" className="h-10" />
+                  placeholder={t("e.g. Block 1, Lot 5 — helps others locate the issue", lang)} className="h-10" />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="water_provider">Water Provider <span className="text-destructive">*</span></Label>
+                <Label htmlFor="water_provider">{t("Water Provider", lang)} <span className="text-destructive">*</span></Label>
                 <Select value={waterProvider} onValueChange={(v) => { setWaterProvider(v); setErrors((e) => ({ ...e, water_provider: undefined })); }}>
                   <SelectTrigger id="water_provider" className={cn("h-10 text-sm", errors.water_provider && touched.has("water_provider") && "border-destructive")}>
-                    <SelectValue placeholder="Select your water provider" />
+                    <SelectValue placeholder={t("Select your water provider", lang)} />
                   </SelectTrigger>
                   <SelectContent>
                     {WATER_PROVIDERS.map((p) => (
@@ -381,13 +385,13 @@ export function ReportForm() {
               </div>
               <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-lg text-xs text-blue-800 dark:text-blue-200 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>Reports go <strong>inactive</strong> after <strong>7 days</strong> of no confirmations. To reactivate, either submit a new report at the same location (we'll match it automatically) or scroll down to enter your Report ID below.</span>
+                <span>{t("Reports go inactive after 7 days of no confirmations. To reactivate, submit a new report at the same location — we will automatically match and reactivate the original report. You can also reactivate from the Track Report page using your Report ID.", lang)}</span>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="issue_type">Water Issue Type <span className="text-destructive">*</span></Label>
+                <Label htmlFor="issue_type">{t("Water Issue Type", lang)} <span className="text-destructive">*</span></Label>
                 <Select value={issueType} onValueChange={(v) => { setIssueType(v); if (v !== "other") setCustomIssue(""); setErrors((e) => ({ ...e, issue_type: undefined, custom_issue: undefined })); }}>
                   <SelectTrigger id="issue_type" className={cn("h-10", errors.issue_type && touched.has("issue_type") && "border-destructive")}>
-                    <SelectValue placeholder="What kind of water issue?" />
+                    <SelectValue placeholder={t("What kind of water issue?", lang)} />
                   </SelectTrigger>
                   <SelectContent>
                     {ISSUE_TYPES.map((t) => (
@@ -404,10 +408,10 @@ export function ReportForm() {
                 )}
                 {issueType === "other" && (
                   <div className="space-y-1.5 pt-1">
-                    <Label htmlFor="custom_issue">Describe the issue <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="custom_issue">{t("Describe the issue", lang)} <span className="text-destructive">*</span></Label>
                     <Input id="custom_issue" value={customIssue}
                       onChange={(e) => { setCustomIssue(e.target.value); setErrors((e) => ({ ...e, custom_issue: undefined })); }}
-                      placeholder="e.g. No water every morning from 6–9 AM"
+                      placeholder={t("e.g. No water every morning from 6–9 AM", lang)}
                       className={cn("h-10 text-sm", errors.custom_issue && touched.has("custom_issue") && "border-destructive")} />
                     {errors.custom_issue && touched.has("custom_issue") && (
                       <p className="text-[11px] text-destructive flex items-center gap-1 mt-0.5">
@@ -423,7 +427,7 @@ export function ReportForm() {
           {step === 1 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="space-y-3">
-                <Label>When did it start? <span className="text-destructive">*</span></Label>
+                <Label>{t("When did it start?", lang)} <span className="text-destructive">*</span></Label>
                 <button
                   type="button"
                   onClick={() => {
@@ -441,12 +445,12 @@ export function ReportForm() {
                   )}
                 >
                   <Clock className="h-4 w-4" />
-                  Started Today — auto-fill date &amp; time
+                  {t("Started Today — auto-fill date & time", lang)}
                 </button>
-                <p className="text-xs text-foreground/70 font-medium">Or set manually below — select the actual date the issue began, even if it was weeks or months ago. Don't remember the exact time? An estimate is fine.</p>
+                <p className="text-xs text-foreground/70 font-medium">{t("Or set manually below — select the actual date the issue began, even if it was weeks or months ago. Don't remember the exact time? An estimate is fine.", lang)}</p>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="start_date" className="text-xs text-muted-foreground">Date</Label>
+                    <Label htmlFor="start_date" className="text-xs text-muted-foreground">{t("Date", lang)}</Label>
                     <Input id="start_date" type="date" value={startDate}
                       onChange={(e) => { setStartedToday(false); setStartDate(e.target.value); setErrors((e) => ({ ...e, start_date: undefined })); }}
                       max={new Date().toISOString().slice(0, 10)}
@@ -456,7 +460,7 @@ export function ReportForm() {
                     )}
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="start_time" className="text-xs text-muted-foreground">Time</Label>
+                    <Label htmlFor="start_time" className="text-xs text-muted-foreground">{t("Time", lang)}</Label>
                     <Input id="start_time" type="time" value={startTime}
                       onChange={(e) => { setStartedToday(false); setStartTime(e.target.value); setErrors((e) => ({ ...e, start_time: undefined })); }}
                       className={cn("h-10 text-sm", errors.start_time && touched.has("start_time") && "border-destructive")} />
@@ -467,14 +471,14 @@ export function ReportForm() {
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="description">Description <span className="text-muted-foreground text-xs">(optional but helpful)</span></Label>
+                <Label htmlFor="description">{t("Description", lang)} <span className="text-muted-foreground text-xs">{t("(optional but helpful)", lang)}</span></Label>
                 <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Is it intermittent? How many households affected? Any other useful details…"
+                  placeholder={t("Is it intermittent? How many households affected? Any other useful details…", lang)}
                   rows={4} className="resize-none" />
-                <p className="text-[11px] text-muted-foreground text-right">{description.length} characters</p>
+                <p className="text-[11px] text-muted-foreground text-right">{description.length} {t("characters", lang)}</p>
               </div>
               <div className="space-y-1.5">
-                <Label>Photo Evidence <span className="text-muted-foreground text-xs">(optional, max 2MB)</span></Label>
+                <Label>{t("Photo Evidence", lang)} <span className="text-muted-foreground text-xs">{t("(optional, max 2MB)", lang)}</span></Label>
                 <div className={cn(
                   "flex items-center gap-3 p-3 border border-dashed rounded-lg transition-colors",
                   errors.photo ? "border-destructive" : "hover:border-water/50",
@@ -487,7 +491,7 @@ export function ReportForm() {
                         setPhoto(file || null);
                         setErrors((e) => ({ ...e, photo: undefined }));
                         if (file && file.size > 2 * 1024 * 1024) {
-                          setErrors((e) => ({ ...e, photo: "Photo is too large. Maximum size is 2MB." }));
+                          setErrors((e) => ({ ...e, photo: t("Photo is too large. Maximum size is 2MB.", lang) }));
                         }
                       }}
                       className="text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border file:border-water/30 file:text-xs file:bg-water-muted file:text-water-dark hover:file:bg-water-muted/80" />
@@ -506,49 +510,49 @@ export function ReportForm() {
           {step === 2 && (
             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="bg-muted/50 rounded-lg p-4 space-y-3 border">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Report Summary</h4>
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{t("Report Summary", lang)}</h4>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Barangay</span>
+                  <span className="text-muted-foreground">{t("Barangay", lang)}</span>
                   <span className="font-medium">{barangay}</span>
                 </div>
                 {street && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Street/Sitio</span>
+                    <span className="text-muted-foreground">{t("Street/Sitio", lang)}</span>
                     <span className="font-medium">{street}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Issue Type</span>
+                  <span className="text-muted-foreground">{t("Issue Type", lang)}</span>
                   <span className="font-medium">{ISSUE_TYPES.find(t => t.value === issueType)?.emoji} {ISSUE_TYPES.find(t => t.value === issueType)?.label}</span>
                 </div>
                 {issueType === "other" && customIssue.trim() && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Identified as</span>
+                    <span className="text-muted-foreground">{t("Identified as", lang)}</span>
                     <span className="font-medium text-xs">{customIssue.trim()}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Started</span>
-                  <span className="font-medium">{startDate} at {startTime}{startedToday ? " (today)" : ""}</span>
+                  <span className="text-muted-foreground">{t("Started", lang)}</span>
+                  <span className="font-medium">{startDate} at {startTime}{startedToday ? ` ${t("(today)", lang)}` : ""}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Provider</span>
+                  <span className="text-muted-foreground">{t("Provider", lang)}</span>
                   <span className="font-medium">{WATER_PROVIDERS.find((p) => p.value === waterProvider)?.label || waterProvider}</span>
                 </div>
                 {lat && lng ? (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Pin Location</span>
-                    <span className="font-medium text-xs text-water">GPS ✓</span>
+                    <span className="text-muted-foreground">{t("Pin Location", lang)}</span>
+                    <span className="font-medium text-xs text-water">{t("GPS ✓", lang)}</span>
                   </div>
                 ) : (
                   <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span><strong>GPS location is required.</strong> Go back to step 1 and share your location to submit this report.</span>
+                    <span>{t("GPS location is required. Go back to step 1 and share your location to submit this report.", lang)}</span>
                   </div>
                 )}
                 {description && (
                   <div className="text-sm pt-1 border-t">
-                    <span className="text-muted-foreground block mb-0.5 text-xs">Description</span>
+                    <span className="text-muted-foreground block mb-0.5 text-xs">{t("Description", lang)}</span>
                     <span className="text-sm leading-relaxed">{description}</span>
                   </div>
                 )}
@@ -556,14 +560,14 @@ export function ReportForm() {
 
               {TURNSTILE_SITE_KEY && (
                 <div>
-                  <Label className="mb-2 block text-xs">Verify you're human</Label>
+                  <Label className="mb-2 block text-xs">{t("Verify you're human", lang)}</Label>
                   <Turnstile siteKey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
                 </div>
               )}
 
               <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>By submitting, you confirm this report is truthful. Do not submit false or malicious information.</span>
+                <span>{t("By submitting, you confirm this report is truthful. Do not submit false or malicious information.", lang)}</span>
               </div>
             </div>
           )}
@@ -573,20 +577,20 @@ export function ReportForm() {
       <div className="flex justify-between gap-3 mt-4">
         <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))}
           disabled={step === 0} className="gap-1.5">
-          <ArrowLeft className="h-3.5 w-3.5" /> Back
+          <ArrowLeft className="h-3.5 w-3.5" /> {t("Back", lang)}
         </Button>
         <div className="text-xs text-muted-foreground self-center">
-          Step {step + 1} of 3
+          {t("Step {current} of {total}", lang).replace("{current}", String(step + 1)).replace("{total}", String(3))}
         </div>
         {step < 2 ? (
           <Button onClick={handleNext} disabled={!canNext()} className="gap-1.5">
-            Continue <ArrowRight className="h-3.5 w-3.5" />
+            {t("Continue", lang)} <ArrowRight className="h-3.5 w-3.5" />
           </Button>
         ) : (
           <Button onClick={handleSubmit} disabled={loading} className="min-w-[140px] gap-1.5">
             {loading ? (
-              <><Loader2 className="h-4 w-4 animate-spin" /> Submitting…</>
-            ) : "Submit Report"}
+              <><Loader2 className="h-4 w-4 animate-spin" /> {t("Submitting…", lang)}</>
+            ) : t("Submit Report", lang)}
           </Button>
         )}
       </div>
@@ -597,34 +601,34 @@ export function ReportForm() {
             <div className="w-12 h-12 rounded-2xl bg-water-muted flex items-center justify-center mx-auto mb-2">
               <LocateFixed className="h-6 w-6 text-water" />
             </div>
-            <DialogTitle className="text-center text-lg">Share your location?</DialogTitle>
+            <DialogTitle className="text-center text-lg">{t("Share your location?", lang)}</DialogTitle>
             <p className="text-center text-xs text-muted-foreground leading-relaxed">
-              Your precise address is <strong>never</strong> shared publicly. Only a blurred coordinate is stored to place a pin on the community map.
+              {t("Your precise address is never shared publicly. Only a blurred coordinate is stored to place a pin on the community map.", lang)}
             </p>
           </DialogHeader>
           <div className="space-y-2.5 px-1">
             <div className="flex items-start gap-2.5 p-2.5 bg-muted/50 rounded-lg">
               <Shield className="h-4 w-4 text-water shrink-0 mt-0.5" />
               <div className="text-[11px] text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Privacy first.</strong> Your exact address is never shown. Only the approximate area appears on the map.
+                {t("Privacy first.", lang)}{" "}{t("Your exact address is never shown. Only the approximate area appears on the map.", lang)}
               </div>
             </div>
             <div className="flex items-start gap-2.5 p-2.5 bg-muted/50 rounded-lg">
               <CheckCircle2 className="h-4 w-4 text-water shrink-0 mt-0.5" />
               <div className="text-[11px] text-muted-foreground leading-relaxed">
-                <strong className="text-foreground">Better accuracy.</strong> Without GPS, the pin is randomly placed near the barangay center and may be inaccurate.
+                {t("Better accuracy.", lang)}{" "}{t("Without GPS, the pin is randomly placed near the barangay center and may be inaccurate.", lang)}
               </div>
             </div>
             <div className="flex items-start gap-2.5 p-2.5 bg-destructive/10 rounded-lg border border-destructive/20">
               <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
               <div className="text-[11px] text-destructive leading-relaxed">
-                GPS location is <strong>required</strong> to submit a report. Random pins are not allowed.
+                {t("GPS location is required to submit a report. Random pins are not allowed.", lang)}
               </div>
             </div>
           </div>
           <div className="flex flex-col gap-2 pt-1">
             <Button onClick={handleConsentGranted} className="w-full h-11 gap-2 text-sm">
-              <LocateFixed className="h-4 w-4" /> Share My Location
+              <LocateFixed className="h-4 w-4" /> {t("Share My Location", lang)}
             </Button>
           </div>
         </DialogContent>

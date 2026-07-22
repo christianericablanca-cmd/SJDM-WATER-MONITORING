@@ -59,6 +59,13 @@ export async function POST(request: Request) {
     );
   }
 
+  if (body.latitude == null || body.longitude == null) {
+    return NextResponse.json(
+      { error: "Location pin is required. Please allow location access or select a spot on the map." },
+      { status: 400 },
+    );
+  }
+
   // Input validation and sanitization
   const barangay = sanitizeString(body.barangay, 50);
   const issueType = sanitizeString(body.issue_type, 30);
@@ -147,6 +154,25 @@ export async function POST(request: Request) {
   }
 
   await recordRateLimit(identifier);
+
+  const webhookUrl = process.env.ADMIN_NOTIFICATION_WEBHOOK;
+  if (webhookUrl) {
+    fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        event: "new_report",
+        report_id: report.report_id_display,
+        barangay: report.barangay,
+        issue_type: report.issue_type,
+        water_provider: report.water_provider,
+        description: report.description,
+        latitude: report.latitude,
+        longitude: report.longitude,
+        created_at: report.created_at,
+      }),
+    }).catch(() => {});
+  }
 
   return NextResponse.json(
     { report_id_display: report.report_id_display, remaining: remaining - 1 },

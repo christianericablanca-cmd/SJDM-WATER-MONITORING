@@ -2,20 +2,23 @@
 
 import Link from "next/link";
 import { Droplets, Heart } from "lucide-react";
+import { t } from "@/lib/i18n";
+import { useLanguage } from "@/components/ui/language-provider";
 
 const NAV_LINKS = [
-  { label: "Map", href: "/map" },
-  { label: "Submit Report", href: "/report" },
-  { label: "Services", href: "/directory" },
-  { label: "Emergency", href: "/emergency" },
-  { label: "Announcements", href: "/announcements" },
-  { label: "How to Use", href: "#", action: "howto" },
-  { label: "Privacy", href: "/privacy" },
-  { label: "Terms", href: "/terms" },
-  { label: "Disclaimer", href: "/disclaimer" },
+  { key: "Water Map", href: "/map" },
+  { key: "Submit Report", href: "/report" },
+  { key: "Services", href: "/directory" },
+  { key: "Emergency", href: "/emergency" },
+  { key: "Announcements", href: "/announcements" },
+  { key: "How to Use", href: "#", action: "howto" },
+  { key: "Privacy", href: "/privacy" },
+  { key: "Terms", href: "/terms" },
+  { key: "Disclaimer", href: "/disclaimer" },
 ];
 
 export function Footer() {
+  const { lang } = useLanguage();
   return (
     <footer className="border-t border-water/10 bg-gradient-to-b from-card to-muted/30 mt-16 safe-bottom">
       <div className="page-container py-6 space-y-5">
@@ -32,7 +35,7 @@ export function Footer() {
 
           <nav className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             {NAV_LINKS.map((link, i) => (
-              <span key={link.label} className="flex items-center gap-4">
+              <span key={link.key} className="flex items-center gap-4">
                 {i > 0 && <span className="w-px h-3 bg-border hidden sm:block" />}
                 {link.action === "howto" ? (
                   <button
@@ -43,11 +46,11 @@ export function Footer() {
                     }}
                     className="hover:text-water transition-colors"
                   >
-                    {link.label}
+                    {t(link.key, lang)}
                   </button>
                 ) : (
                   <Link href={link.href} className="hover:text-water transition-colors">
-                    {link.label}
+                    {t(link.key, lang)}
                   </Link>
                 )}
               </span>
@@ -57,11 +60,11 @@ export function Footer() {
 
         <div className="border-t border-border/50 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted-foreground">
           <p className="text-center sm:text-left">
-            Independent community platform. Not affiliated with PrimeWater, MPBW, or the LGU.
+            {t("WaterWatch SJDM is an independent community platform. Not affiliated with water providers or the LGU.", lang)}
           </p>
           <div className="flex items-center gap-3 text-center sm:text-right">
             <span className="flex items-center gap-1">
-              Built with <Heart className="h-3 w-3 text-red-400 fill-red-400" /> by an SJDM programmer citizen
+              {t("Built with <3 by an SJDM programmer citizen", lang)} <Heart className="h-3 w-3 text-red-400 fill-red-400" /> {t("for San Jose del Monte, Bulacan", lang)}
             </span>
             <span className="text-[10px] text-muted-foreground/50">&copy; {new Date().getFullYear()}</span>
           </div>

@@ -1,3 +1,5 @@
+import { cookies } from "next/headers";
+import { t } from "@/lib/i18n";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +18,9 @@ export default async function TrackReportPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const cookieStore = await cookies();
+  const lang = (cookieStore.get("lang")?.value || "en") as "en" | "tl";
+
   const { id } = await params;
   const reportId = `SJDM-WATER-${id.padStart(5, "0")}`;
 
@@ -31,14 +36,14 @@ export default async function TrackReportPage({
   const issue = ISSUE_TYPES.find((t) => t.value === report.issue_type);
 
   const statusSteps = report.denied ? [
-    { key: "submitted", label: "Submitted", desc: "Report has been received" },
-    { key: "denied", label: "Denied", desc: "Report was not approved by the community team" },
+    { key: "submitted", label: t("Submitted", lang), desc: t("Report has been received", lang) },
+    { key: "denied", label: t("Denied", lang), desc: t("Report was not approved by the community team", lang) },
   ] : [
-    { key: "submitted", label: "Submitted", desc: "Report has been received" },
-    { key: "under_review", label: "Under Review", desc: "Pending approval from the community team" },
-    { key: "approved", label: "Approved", desc: "Report has been reviewed and verified" },
-    { key: "resolved", label: "Resolved", desc: "Water issue has been resolved" },
-    { key: "stale", label: "Inactive", desc: "No new reports for 7 days — issue may still persist" },
+    { key: "submitted", label: t("Submitted", lang), desc: t("Report has been received", lang) },
+    { key: "under_review", label: t("Under Review", lang), desc: t("Pending approval from the community team", lang) },
+    { key: "approved", label: t("Approved", lang), desc: t("Report has been reviewed and verified", lang) },
+    { key: "resolved", label: t("Resolved", lang), desc: t("Water issue has been resolved", lang) },
+    { key: "stale", label: t("Inactive", lang), desc: t("No new reports for 7 days — issue may still persist", lang) },
   ];
   const statusOrder = report.denied ? ["submitted", "denied"] : ["submitted", "under_review", "approved", "resolved", "stale"];
   const effectiveStatus = report.status;
@@ -48,7 +53,7 @@ export default async function TrackReportPage({
     <div className="page-container py-8">
       <div className="max-w-2xl mx-auto space-y-6">
         <div className="text-center">
-          <h1 className="section-title">Track Report</h1>
+          <h1 className="section-title">{t("Track Report", lang)}</h1>
           <p className="font-mono text-water text-lg font-bold mt-1">{reportId}</p>
         </div>
 
@@ -78,18 +83,18 @@ export default async function TrackReportPage({
             <div className="grid grid-cols-2 gap-4 text-sm">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span>Started {formatDate(report.started_at)}</span>
+                <span>{t("Started", lang)} {formatDate(report.started_at)}</span>
               </div>
               {report.resolved_at && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   {report.status === "resolved" ? <CheckCircle2 className="h-4 w-4 text-success" /> : <Clock className="h-4 w-4" />}
-                  <span>{report.status === "resolved" ? "Resolved " : "Inactive since "}{formatDate(report.resolved_at)}</span>
+                  <span>{report.status === "resolved" ? t("Resolved ", lang) : t("Inactive since ", lang)}{formatDate(report.resolved_at)}</span>
                 </div>
               )}
             </div>
             {report.confirmation_count !== undefined && report.confirmation_count > 0 && (
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-muted-foreground">Community confirmations:</span>
+                <span className="text-muted-foreground">{t("Community confirmations:", lang)}</span>
                 <span className="font-bold text-water">{report.confirmation_count}</span>
               </div>
             )}
@@ -98,7 +103,7 @@ export default async function TrackReportPage({
 
         <Card className="shadow-card border-border/60">
           <CardHeader>
-            <CardTitle className="text-base">Status Progress</CardTitle>
+            <CardTitle className="text-base">{t("Status Progress", lang)}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-0">
@@ -143,7 +148,7 @@ export default async function TrackReportPage({
           <div className="p-4 bg-destructive/5 border border-destructive/20 rounded-xl text-xs text-destructive flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
             <div>
-              <strong>Reason for denial:</strong> {report.denied_reason}
+              <strong>{t("Reason for denial:", lang)}</strong> {report.denied_reason}
             </div>
           </div>
         )}
@@ -155,7 +160,7 @@ export default async function TrackReportPage({
         {!report.denied && report.status !== "resolved" && report.status !== "stale" && (
           <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-200 flex items-start gap-2.5">
             <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-            <span>Reports go <strong>inactive</strong> after <strong>7 days</strong> with no confirmations. If this issue is still ongoing, tap "I have this too" below, submit a new report at the same location, or use your Report ID to <ReactivateById />.</span>
+            <span dangerouslySetInnerHTML={{ __html: t(`Reports go <strong>inactive</strong> after <strong>7 days</strong> with no confirmations. If this issue is still ongoing, tap "I have this too" below, submit a new report at the same location, or use your Report ID to `, lang) }} /><ReactivateById />.
           </div>
         )}
 

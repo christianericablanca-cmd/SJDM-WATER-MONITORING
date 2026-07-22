@@ -1,17 +1,31 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { WaterMap } from "@/components/map/water-map";
 import { AutoResolveTrigger } from "@/components/map/auto-resolve-trigger";
+import { DamLevelWidget } from "@/components/map/dam-level-widget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ISSUE_TYPES, ISSUE_EMOJI } from "@/lib/constants";
 import { getConfidenceLevel } from "@/lib/utils";
 import { ClipboardList, MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { cookies } from "next/headers";
+import { t } from "@/lib/i18n";
 
-export const dynamic = "force-dynamic";
+const MARKER_COLORS: Record<string, string> = {
+  no_water: "#dc2626",
+  low_pressure: "#ea580c",
+  dirty_water: "#a16207",
+  water_leak: "#2563eb",
+  pipe_infrastructure: "#7c3aed",
+  other: "#6b7280",
+};
+
+export const revalidate = 30;
 
 export default async function MapPage() {
   const supabase = await createServerSupabase();
+  const cookieStore = await cookies();
+  const lang = (cookieStore.get("lang")?.value || "en") as "en" | "tl";
   const { data: reports } = await supabase
     .from("reports")
     .select("*")
@@ -38,54 +52,91 @@ export default async function MapPage() {
     .sort((a, b) => b[1].total - a[1].total)
     .slice(0, 5);
 
+  const maxAreaReports = topBarangays[0]?.[1]?.total ?? 1;
+
   const issueCounts: Record<string, number> = {};
   activeReports.forEach((r) => {
     issueCounts[r.issue_type] = (issueCounts[r.issue_type] || 0) + 1;
   });
+  const totalActive = activeReports.length || 1;
 
   return (
     <div className="page-container py-4 sm:py-8 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">Water Situation Map</h1>
+          <h1 className="text-xl sm:text-3xl font-bold tracking-tight">{t("Water Situation Map", lang)}</h1>
           <p className="text-xs sm:text-base text-muted-foreground">
-            Community-reported water issues across SJDM barangays.
+            {t("Community-reported water issues across SJDM barangays.", lang)}
           </p>
         </div>
         <Badge variant="outline" className="text-[10px] sm:text-xs w-fit py-1">
-          {totalReports} total reports
+          {totalReports} {t("total reports", lang)}
         </Badge>
       </div>
 
       <AutoResolveTrigger />
       <WaterMap reports={reports ?? []} businesses={businesses ?? []} />
+      <DamLevelWidget />
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {([
+          { label: t("Active Reports", lang), value: activeReports.length, icon: ClipboardList, color: "text-water", bg: "bg-water-muted" },
+          { label: t("Barangays", lang), value: new Set(activeReports.map((r) => r.barangay)).size, icon: MapPin, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20" },
+          { label: t("Resolved", lang), value: reports?.filter((r) => r.status === "resolved").length ?? 0, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20" },
+          { label: t("Total Reports", lang), value: totalReports, icon: AlertTriangle, color: "text-muted-foreground", bg: "bg-muted" },
+        ] as const).map((stat) => (
+          <Card key={stat.label} className="p-3 sm:p-4 shadow-card flex items-center gap-3">
+            <div className={cn("w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0", stat.bg)}>
+              <stat.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", stat.color)} />
+            </div>
+            <div>
+              <p className="text-lg sm:text-xl font-bold tabular-nums leading-tight">{stat.value}</p>
+              <p className="text-[10px] sm:text-xs text-muted-foreground">{stat.label}</p>
+            </div>
+          </Card>
+        ))}
+      </div>
+      <p className="text-[10px] sm:text-xs text-muted-foreground text-center -mt-1">
+        {t("Resolved reports are marked by community members — not by the water provider.", lang)}
+      </p>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
         <Card className="p-4 sm:p-5 shadow-card">
           <h3 className="font-semibold text-xs sm:text-sm flex items-center gap-2 mb-3 sm:mb-4">
             <MapPin className="h-4 w-4 text-water" />
-            Most Reported Areas
+            {t("Most Reported Areas", lang)}
           </h3>
-          <div className="space-y-2.5 sm:space-y-3">
+          <div className="space-y-3">
             {topBarangays.length > 0 ? topBarangays.map(([barangay, counts], i) => {
               const confidence = getConfidenceLevel(counts.total, counts.confirmed);
+              const barWidth = Math.max((counts.total / maxAreaReports) * 100, 12);
               return (
-                <div key={barangay} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                    <span className="text-[10px] sm:text-xs font-medium text-muted-foreground w-4 sm:w-5 text-right shrink-0">{i + 1}.</span>
-                    <span className="text-xs sm:text-sm font-medium truncate">{barangay}</span>
-                    <span className="text-[10px] sm:text-xs text-muted-foreground shrink-0">{counts.total} reports</span>
+                <div key={barangay}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="text-[10px] sm:text-xs font-medium text-muted-foreground w-4 text-right shrink-0">{i + 1}.</span>
+                      <span className="text-xs sm:text-sm font-medium truncate">{barangay}</span>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[10px] sm:text-xs tabular-nums font-semibold">{counts.total}</span>
+                      <Badge variant={
+                        confidence.color === "green" ? "success" :
+                        confidence.color === "yellow" ? "warning" : "secondary"
+                      } className="text-[10px] px-1 py-0">
+                        {confidence.level}
+                      </Badge>
+                    </div>
                   </div>
-                  <Badge variant={
-                    confidence.color === "green" ? "success" :
-                    confidence.color === "yellow" ? "warning" : "secondary"
-                  } className="text-[9px] sm:text-[10px] px-1.5 py-0 shrink-0">
-                    {confidence.level}
-                  </Badge>
+                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div className={cn(
+                      "h-full rounded-full transition-all",
+                      confidence.color === "green" ? "bg-emerald-500" : confidence.color === "yellow" ? "bg-orange-400" : "bg-muted-foreground/30"
+                    )} style={{ width: `${barWidth}%` }} />
+                  </div>
                 </div>
               );
             }) : (
-              <p className="text-sm text-muted-foreground text-center py-4">No reports yet.</p>
+              <p className="text-sm text-muted-foreground text-center py-4">{t("No reports yet.", lang)}</p>
             )}
           </div>
         </Card>
@@ -93,39 +144,33 @@ export default async function MapPage() {
         <Card className="p-4 sm:p-5 shadow-card">
           <h3 className="font-semibold text-xs sm:text-sm flex items-center gap-2 mb-3 sm:mb-4">
             <AlertTriangle className="h-4 w-4 text-water" />
-            Current Issues
+            {t("Current Issues", lang)}
           </h3>
-          <div className="space-y-2.5 sm:space-y-3">
-            {ISSUE_TYPES.map((issue) => (
-              <div key={issue.value} className="flex items-center justify-between">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-base sm:text-lg">{ISSUE_EMOJI[issue.value]}</span>
-                  <span className="text-xs sm:text-sm">{issue.label}</span>
+          <div className="space-y-3">
+            {ISSUE_TYPES.map((issue) => {
+              const count = issueCounts[issue.value] || 0;
+              const pct = Math.max(Math.round((count / totalActive) * 100), count > 0 ? 4 : 0);
+              return (
+                <div key={issue.value}>
+                  <div className="flex items-center justify-between mb-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="text-sm sm:text-base">{ISSUE_EMOJI[issue.value]}</span>
+                      <span className="text-[10px] sm:text-xs">{t(issue.label, lang)}</span>
+                    </div>
+                    <span className="text-xs sm:text-sm font-semibold tabular-nums shrink-0">{count} <span className="text-[10px] text-muted-foreground font-normal">{pct}%</span></span>
+                  </div>
+                  <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                    <div className="h-full rounded-full transition-all" style={{
+                      width: `${pct}%`,
+                      backgroundColor: MARKER_COLORS[issue.value] || "#6b7280",
+                    }} />
+                  </div>
                 </div>
-                <span className="text-sm sm:text-base font-semibold tabular-nums">{issueCounts[issue.value] || 0}</span>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
       </div>
-
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-        {[
-          { label: "Active Reports", value: activeReports.length, icon: ClipboardList, color: "text-water" },
-          { label: "Barangays", value: new Set(activeReports.map((r) => r.barangay)).size, icon: MapPin, color: "text-orange-500" },
-          { label: "Resolved", value: reports?.filter((r) => r.status === "resolved").length ?? 0, icon: CheckCircle2, color: "text-emerald-500" },
-          { label: "Total Reports", value: totalReports, icon: AlertTriangle, color: "text-muted-foreground" },
-        ].map((stat) => (
-          <div key={stat.label} className="stat-card text-center py-3 sm:py-5">
-            <stat.icon className={cn("h-3.5 sm:h-4 w-3.5 sm:w-4 mx-auto mb-1", stat.color)} />
-            <p className="text-lg sm:text-xl font-bold">{stat.value}</p>
-            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5">{stat.label}</p>
-          </div>
-        ))}
-      </div>
-      <p className="text-[10px] sm:text-xs text-muted-foreground text-center mt-2">
-        Resolved reports are marked by community members — not by the water provider.
-      </p>
     </div>
   );
 }

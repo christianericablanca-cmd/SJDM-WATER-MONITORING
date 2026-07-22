@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { LanguageProvider } from "@/components/ui/language-provider";
 import { Header } from "@/components/layout/header";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { Footer } from "@/components/layout/footer";
 import { ToastNotificationProvider } from "@/components/ui/toast-provider";
 import { NetworkStatus } from "@/components/ui/network-status";
@@ -41,7 +44,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -49,17 +52,25 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <script dangerouslySetInnerHTML={{
+          __html: `try{var t=localStorage.getItem("theme")||"system";if(t==="system"){t=window.matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"}document.documentElement.classList.toggle("dark",t==="dark")}catch(e){}`,
+        }} />
       </head>
       <body className="min-h-screen flex flex-col">
+        <ThemeProvider>
+        <LanguageProvider>
         <ToastNotificationProvider>
           <NetworkStatus />
           <Header />
-          <main className="flex-1">{children}</main>
+          <BottomNav />
+          <main className="flex-1 pb-20 md:pb-0">{children}</main>
           <Footer />
           <DisclaimPopover />
           <BugReportButton />
           <PwaRegister />
         </ToastNotificationProvider>
+        </LanguageProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

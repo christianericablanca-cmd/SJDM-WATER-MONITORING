@@ -20,6 +20,7 @@ import {
   LogOut, MessageSquare, Building2, Megaphone, Loader2, FileText,
   CheckCircle, XCircle, Search, Shield, AlertCircle, Plus, Eye,
   ChevronRight, Clock, MapPin, Droplets, Phone, Truck, LayoutDashboard, Download, Bug,
+  ChevronLeft,
 } from "lucide-react";
 
 interface BusinessClaim {
@@ -46,6 +47,14 @@ interface Props {
   pendingCount: number;
   allClaims: BusinessClaim[];
   bugReports: { id: string; description: string; contact: string | null; page: string | null; created_at: string }[];
+  totalReports: number;
+  totalBusinesses: number;
+  totalAnnouncements: number;
+  pageSize: number;
+  approvedCount: number;
+  resolvedCount: number;
+  deniedCount: number;
+  verifiedBizCount: number;
 }
 
 type Tab = "dashboard" | "reports" | "claims" | "directory" | "announcements" | "bugs";
@@ -66,7 +75,7 @@ const CAT_LABEL: Record<string, string> = {
   laundry_services: "Laundry",
 };
 
-export function AdminDashboard({ reports, businesses, announcements, pendingCount, allClaims, bugReports }: Props) {
+export function AdminDashboard({ reports, businesses, announcements, pendingCount, allClaims, bugReports, totalReports, totalBusinesses, totalAnnouncements, pageSize, approvedCount, resolvedCount, deniedCount, verifiedBizCount }: Props) {
   const pendingClaims = allClaims.filter((c) => c.status === "pending");
   const approvedClaims = allClaims.filter((c) => c.status === "approved");
   const rejectedClaims = allClaims.filter((c) => c.status === "rejected");
@@ -77,12 +86,10 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Pagination
-  const PAGE_SIZE = 15;
-  const [reportPage, setReportPage] = useState(0);
-  const [claimPage, setClaimPage] = useState(0);
-  const [servicePage, setServicePage] = useState(0);
-  const [announcementPage, setAnnouncementPage] = useState(0);
+  const reportPage = 0;
+  const claimPage = 0;
+  const servicePage = 0;
+  const announcementPage = 0;
 
   // Filters
   const [providerFilter, setProviderFilter] = useState("all");
@@ -113,12 +120,14 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
 
   const supabase = createClient();
 
+  const navigate = (params: Record<string, string>) => {
+    const url = new URL(window.location.href);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    router.push(url.pathname + url.search);
+  };
+
   const switchTab = (t: Tab) => {
     setTab(t);
-    setReportPage(0);
-    setClaimPage(0);
-    setServicePage(0);
-    setAnnouncementPage(0);
     setSearch("");
   };
 
@@ -281,22 +290,18 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     (!search || r.report_id_display.toLowerCase().includes(search.toLowerCase()) || r.barangay.toLowerCase().includes(search.toLowerCase())) &&
     (providerFilter === "all" || r.water_provider === providerFilter)
   );
-  const paginatedReports = filteredReports.slice(reportPage * 15, (reportPage + 1) * 15);
 
   const pendingReports = reports.filter((r) => (!r.verified && !r.denied) || (r.verified && r.status === "submitted"));
 
   const claimSource = claimSubTab === "new" ? pendingClaims : claimSubTab === "approved" ? approvedClaims : rejectedClaims;
-  const paginatedClaims = claimSource.slice(claimPage * 15, (claimPage + 1) * 15);
 
   const filteredBiz = businesses.filter((b) => serviceSubTab === "verified" ? b.verified : !b.verified);
-  const paginatedBiz = filteredBiz.slice(servicePage * 15, (servicePage + 1) * 15);
 
-  const paginatedAnnouncements = announcements.slice(announcementPage * 15, (announcementPage + 1) * 15);
   const tabCounts: Record<string, string> = {
-    reports: `${reports.length}`,
+    reports: `${totalReports}`,
     claims: pendingClaims.length ? `${pendingClaims.length}` : "",
-    directory: `${businesses.length}`,
-    announcements: `${announcements.length}`,
+    directory: `${totalBusinesses}`,
+    announcements: `${totalAnnouncements}`,
     bugs: bugReports.length ? `${bugReports.length}` : "",
   };
 
@@ -346,12 +351,12 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
         </nav>
 
         <div className="p-3 border-t space-y-2">
-          <div className="text-[10px] text-muted-foreground space-y-0.5 px-1">
-            <div className="flex justify-between"><span>Pending reports</span><span className="font-medium text-amber-600">{pendingReports.length}</span></div>
-            <div className="flex justify-between"><span>Active reports</span><span className="font-medium">{reports.filter((r) => r.status !== "resolved" && r.status !== "stale" && r.status !== "denied").length}</span></div>
-            <div className="flex justify-between"><span>Resolved</span><span className="font-medium text-emerald-600">{reports.filter((r) => r.status === "resolved").length}</span></div>
-            <div className="flex justify-between"><span>Inactive</span><span className="font-medium text-muted-foreground">{reports.filter((r) => r.status === "stale").length}</span></div>
-          </div>
+            <div className="text-[10px] text-muted-foreground space-y-0.5 px-1">
+              <div className="flex justify-between"><span>Pending reports</span><span className="font-medium text-amber-600">{pendingReports.length}</span></div>
+              <div className="flex justify-between"><span>Total reports</span><span className="font-medium">{totalReports}</span></div>
+              <div className="flex justify-between"><span>Resolved</span><span className="font-medium text-emerald-600">{reports.filter((r) => r.status === "resolved").length}</span></div>
+              <div className="flex justify-between"><span>Inactive</span><span className="font-medium text-muted-foreground">{reports.filter((r) => r.status === "stale").length}</span></div>
+            </div>
           <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full text-xs h-8 gap-1.5">
             <LogOut className="h-3 w-3" /> Sign Out
           </Button>
@@ -388,7 +393,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   <MessageSquare className="h-4 w-4" />
                   <span className="text-xs font-medium">Reports</span>
                 </div>
-                <p className="text-3xl font-bold tabular-nums">{reports.length}</p>
+                <p className="text-3xl font-bold tabular-nums">{totalReports}</p>
                 <p className="text-xs text-amber-600 font-medium mt-1">{pendingReports.length} pending</p>
               </button>
               <button onClick={() => switchTab("claims")}
@@ -405,7 +410,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   <Building2 className="h-4 w-4" />
                   <span className="text-xs font-medium">Services</span>
                 </div>
-                <p className="text-3xl font-bold tabular-nums">{businesses.length}</p>
+                <p className="text-3xl font-bold tabular-nums">{totalBusinesses}</p>
               </button>
               <button onClick={() => switchTab("announcements")}
                 className="rounded-xl border p-5 text-left transition-all cursor-pointer hover:shadow-sm hover:border-water/40">
@@ -425,20 +430,20 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
                 {(["new", "approved", "resolved", "denied"] as const).map((st) => (
-                  <button key={st} onClick={() => { setReportSubTab(st); setReportPage(0); setSearch(""); }}
+                   <button key={st} onClick={() => { setReportSubTab(st); setSearch(""); }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize",
                       reportSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
                     )}>
-                    {st === "new" ? `New (${pendingReports.length})`
-                      : st === "approved" ? `Approved (${reports.filter(r => r.verified && r.status !== "resolved" && r.status !== "submitted").length})`
-                      : st === "resolved" ? `Resolved (${reports.filter(r => r.status === "resolved").length})`
-                      : `Denied (${reports.filter(r => r.denied).length})`}
+                    {st === "new" ? `New (${pendingCount})`
+                      : st === "approved" ? `Approved (${approvedCount})`
+                      : st === "resolved" ? `Resolved (${resolvedCount})`
+                      : `Denied (${deniedCount})`}
                   </button>
                 ))}
               </div>
               <div className="flex items-center gap-2">
-                <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); setReportPage(0); }}>
+                <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); }}>
                   <SelectTrigger className="h-8 text-xs w-28">
                     <SelectValue placeholder="Provider" />
                   </SelectTrigger>
@@ -451,7 +456,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </Select>
                 <div className="relative w-48 sm:w-56">
                   <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                  <Input placeholder="Search ID or barangay…" value={search} onChange={(e) => { setSearch(e.target.value); setReportPage(0); }}
+                  <Input placeholder="Search ID or barangay…" value={search} onChange={(e) => { setSearch(e.target.value); }}
                     className="pl-8 h-8 text-xs" />
                 </div>
               </div>
@@ -484,7 +489,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 <p className="text-sm text-muted-foreground">No reports found.</p>
               </div>
             ) : (
-              <div className="rounded-xl border overflow-hidden">
+              <div className="rounded-xl border overflow-hidden overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -497,8 +502,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                       <th className="text-right px-3 py-2.5 font-medium">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
-                    {paginatedReports.map((report) => (
+                   <tbody className="divide-y">
+                     {filteredReports.map((report) => (
                       <tr key={report.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-3 py-3">
                           <span className="font-mono text-[11px] font-medium">{report.report_id_display}</span>
@@ -550,7 +555,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </table>
               </div>
             )}
-            <Pagination page={reportPage} total={filteredReports.length} onChange={setReportPage} />
+            <Pagination page={reportPage} total={totalReports} pageSize={pageSize} onChange={(p) => navigate({ reportPage: String(p) })} />
           </div>
         )}
 
@@ -561,7 +566,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               {(["new", "approved", "rejected"] as const).map((st) => {
                 const count = st === "new" ? pendingClaims.length : st === "approved" ? approvedClaims.length : rejectedClaims.length;
                 return (
-                  <button key={st} onClick={() => { setClaimSubTab(st); setClaimPage(0); }}
+                  <button key={st} onClick={() => { setClaimSubTab(st); }}
                     className={cn(
                       "px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize",
                       claimSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -577,7 +582,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 <p className="text-sm text-muted-foreground">No {claimSubTab} claims.</p>
               </div>
             ) : (
-              <div className="rounded-xl border overflow-hidden">
+              <div className="rounded-xl border overflow-hidden overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -589,8 +594,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                       <th className="text-right px-3 py-2.5 font-medium">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
-                    {paginatedClaims.map((claim) => (
+                   <tbody className="divide-y">
+                     {claimSource.map((claim) => (
                       <tr key={claim.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-3 py-3">
                           <span className="text-xs font-medium">{claim.name}</span>
@@ -635,7 +640,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </table>
               </div>
             )}
-            <Pagination page={claimPage} total={claimSource.length} onChange={setClaimPage} />
+            <Pagination page={claimPage} total={allClaims.length} pageSize={pageSize} onChange={(p) => navigate({ claimPage: String(p) })} />
           </div>
         )}
 
@@ -645,9 +650,9 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
                 {(["verified", "community"] as const).map((st) => {
-                  const count = st === "verified" ? businesses.filter((b) => b.verified).length : businesses.filter((b) => !b.verified).length;
+                  const count = st === "verified" ? verifiedBizCount : totalBusinesses - verifiedBizCount;
                   return (
-                    <button key={st} onClick={() => { setServiceSubTab(st); setServicePage(0); }}
+                    <button key={st} onClick={() => { setServiceSubTab(st); }}
                       className={cn(
                         "px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize",
                         serviceSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -663,7 +668,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                     <Plus className="h-3.5 w-3.5" /> Add Service
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] overflow-y-auto max-w-md">
                   <DialogHeader><DialogTitle>Add Service</DialogTitle></DialogHeader>
                   <div className="space-y-3 pt-2">
                     <div className="space-y-1.5">
@@ -735,7 +740,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 <p className="text-sm text-muted-foreground">No {serviceSubTab} listings.</p>
               </div>
             ) : (
-              <div className="rounded-xl border overflow-hidden">
+              <div className="rounded-xl border overflow-hidden overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -746,8 +751,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                       <th className="text-left px-3 py-2.5 font-medium">Verified</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
-                    {paginatedBiz.map((biz) => (
+                   <tbody className="divide-y">
+                     {filteredBiz.map((biz) => (
                       <tr key={biz.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-3 py-3">
                           <span className="text-xs font-medium">{biz.name}</span>
@@ -772,7 +777,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </table>
               </div>
             )}
-            <Pagination page={servicePage} total={filteredBiz.length} onChange={setServicePage} />
+            <Pagination page={servicePage} total={totalBusinesses} pageSize={pageSize} onChange={(p) => navigate({ servicePage: String(p) })} />
           </div>
         )}
 
@@ -786,7 +791,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 <p className="text-sm text-muted-foreground">No announcements yet.</p>
               </div>
             ) : (
-              <div className="rounded-xl border overflow-hidden">
+              <div className="rounded-xl border overflow-hidden overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -797,8 +802,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                       <th className="text-left px-3 py-2.5 font-medium hidden sm:table-cell">Date</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y">
-                    {paginatedAnnouncements.map((a) => (
+                   <tbody className="divide-y">
+                     {announcements.map((a) => (
                       <tr key={a.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-3 py-3">
                           <span className="text-xs font-medium">{a.title}</span>
@@ -823,7 +828,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </table>
               </div>
             )}
-            <Pagination page={announcementPage} total={announcements.length} onChange={setAnnouncementPage} />
+            <Pagination page={announcementPage} total={totalAnnouncements} pageSize={pageSize} onChange={(p) => navigate({ announcementPage: String(p) })} />
           </div>
         )}
         {tab === "bugs" && (
@@ -1114,13 +1119,13 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   );
 }
 
-function Pagination({ page, total, onChange }: { page: number; total: number; onChange: (p: number) => void }) {
-  const totalPages = Math.ceil(total / 15);
+function Pagination({ page, total, pageSize = 15, onChange }: { page: number; total: number; pageSize?: number; onChange: (p: number) => void }) {
+  const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
   return (
     <div className="flex items-center justify-between pt-2">
       <p className="text-[11px] text-muted-foreground">
-        {page * 15 + 1}–{Math.min((page + 1) * 15, total)} of {total}
+        {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total}
       </p>
       <div className="flex items-center gap-1">
         <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={page === 0} onClick={() => onChange(page - 1)}>

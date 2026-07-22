@@ -1,12 +1,17 @@
+import { cookies } from "next/headers";
+import { t } from "@/lib/i18n";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { Megaphone, Building2 } from "lucide-react";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 120;
 
 export default async function AnnouncementsPage() {
+  const cookieStore = await cookies();
+  const lang = (cookieStore.get("lang")?.value || "en") as "en" | "tl";
+
   const supabase = await createServerSupabase();
   const { data: announcements } = await supabase
     .from("announcements")
@@ -19,9 +24,9 @@ export default async function AnnouncementsPage() {
   return (
     <div className="page-container py-6 sm:py-8 space-y-8">
       <div>
-        <h1 className="section-title">Announcements</h1>
+        <h1 className="section-title">{t("Announcements", lang)}</h1>
         <p className="section-subtitle">
-          Official advisories and community announcements about the water situation in SJDM.
+          {t("Official advisories and community announcements about the water situation in SJDM.", lang)}
         </p>
       </div>
 
@@ -31,13 +36,13 @@ export default async function AnnouncementsPage() {
             <Building2 className="h-4.5 w-4.5 text-water" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Official Announcements</h2>
+            <h2 className="text-lg font-semibold">{t("Official Announcements", lang)}</h2>
             <p className="text-xs text-muted-foreground">{official.length} announcement{official.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
         {official.length === 0 ? (
           <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed">
-            <p className="text-sm text-muted-foreground">No official announcements yet.</p>
+            <p className="text-sm text-muted-foreground">{t("No official announcements yet.", lang)}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -45,11 +50,11 @@ export default async function AnnouncementsPage() {
               <Card key={a.id} className="shadow-card border-border/60">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Badge variant="default" className="text-[10px] px-1.5 py-0">Official</Badge>
+                    <Badge variant="default" className="text-[10px] px-1.5 py-0">{t("Official", lang)}</Badge>
                     <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
                   </div>
                   <CardTitle className="text-base">{a.title}</CardTitle>
-                  <CardDescription className="text-xs">Source: {a.source}</CardDescription>
+                  <CardDescription className="text-xs">{t("Source:", lang)} {a.source}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
@@ -66,13 +71,13 @@ export default async function AnnouncementsPage() {
             <Megaphone className="h-4.5 w-4.5 text-muted-foreground" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold">Community Announcements</h2>
+            <h2 className="text-lg font-semibold">{t("Community Announcements", lang)}</h2>
             <p className="text-xs text-muted-foreground">{community.length} announcement{community.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
         {community.length === 0 ? (
           <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed">
-            <p className="text-sm text-muted-foreground">No community announcements yet.</p>
+            <p className="text-sm text-muted-foreground">{t("No community announcements yet.", lang)}</p>
           </div>
         ) : (
           <div className="space-y-4">
@@ -80,7 +85,7 @@ export default async function AnnouncementsPage() {
               <Card key={a.id} className="shadow-card border-border/60">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2 mb-1.5">
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">Community</Badge>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("Community", lang)}</Badge>
                     <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
                   </div>
                   <CardTitle className="text-base">{a.title}</CardTitle>

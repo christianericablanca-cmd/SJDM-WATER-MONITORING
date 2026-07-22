@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast-provider";
+import { useLanguage } from "@/components/ui/language-provider";
+import { t } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { usePathname } from "next/navigation";
 
@@ -17,11 +19,12 @@ export function BugReportButton() {
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const pathname = usePathname();
+  const { lang } = useLanguage();
   const { success: toastSuccess, error: toastError } = useToast();
 
   const handleSubmit = async () => {
     if (description.trim().length < 10) {
-      toastError("Too short", "Please describe the issue in more detail.");
+      toastError(t("Too short", lang), t("Please describe the issue in more detail.", lang));
       return;
     }
     setLoading(true);
@@ -33,7 +36,7 @@ export function BugReportButton() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
-      toastSuccess("Bug reported", "Thanks for helping improve WaterWatch.");
+      toastSuccess(t("Bug reported", lang), t("Thanks for helping improve WaterWatch.", lang));
       setSent(true);
     } catch (err: any) {
       toastError("Failed", err.message);
@@ -47,10 +50,10 @@ export function BugReportButton() {
       <button
         type="button"
         onClick={() => { setOpen(true); setSent(false); }}
-        className="fixed bottom-5 right-5 z-[9990] flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-foreground text-background shadow-lg text-xs font-medium hover:scale-105 transition-transform"
+        className="fixed bottom-5 right-5 z-[9990] flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-foreground text-background shadow-lg text-xs font-medium hover:scale-105 transition-transform min-h-[44px] safe-bottom"
       >
         <Bug className="h-3.5 w-3.5" />
-        Report Bug
+        {t("Report Bug", lang)}
       </button>
 
       {open && (
@@ -62,8 +65,8 @@ export function BugReportButton() {
                   <Bug className="h-4 w-4 text-amber-600" />
                 </div>
                 <div>
-                  <h2 className="text-sm font-semibold">Report a Bug</h2>
-                  <p className="text-[11px] text-muted-foreground">Found an issue? Let us know.</p>
+                  <h2 className="text-sm font-semibold">{t("Report a Bug", lang)}</h2>
+                  <p className="text-[11px] text-muted-foreground">{t("Found an issue? Let us know.", lang)}</p>
                 </div>
               </div>
               <button onClick={() => setOpen(false)} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
@@ -76,33 +79,33 @@ export function BugReportButton() {
                 <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center mx-auto">
                   <CheckCircle2 className="h-6 w-6 text-emerald-500" />
                 </div>
-                <p className="text-sm font-medium">Bug Reported</p>
-                <p className="text-xs text-muted-foreground">Thanks for helping improve WaterWatch.</p>
-                <Button variant="outline" size="sm" onClick={() => setOpen(false)} className="mt-2">Close</Button>
+                <p className="text-sm font-medium">{t("Bug Reported", lang)}</p>
+                <p className="text-xs text-muted-foreground">{t("Thanks for helping improve WaterWatch.", lang)}</p>
+                <Button variant="outline" size="sm" onClick={() => setOpen(false)} className="mt-2">{t("Close", lang)}</Button>
               </div>
             ) : (
               <div className="p-4 space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Describe the bug <span className="text-destructive">*</span></Label>
+                  <Label className="text-xs">{t("Describe the bug", lang)} <span className="text-destructive">*</span></Label>
                   <Textarea
                     value={description}
                     onChange={(e) => setDescription(e.target.value)}
-                    placeholder="What went wrong? What did you expect to happen?"
+                    placeholder={t("What went wrong? What did you expect to happen?", lang)}
                     rows={4}
                     className="resize-none text-sm"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs">Contact <span className="text-muted-foreground">(optional)</span></Label>
+                  <Label className="text-xs">{t("Contact", lang)} <span className="text-muted-foreground">{t("(optional)", lang)}</span></Label>
                   <Input
                     value={contact}
                     onChange={(e) => setContact(e.target.value)}
-                    placeholder="Email or FB Messenger — if you'd like a follow-up"
+                    placeholder={t("Email or FB Messenger — if you'd like a follow-up", lang)}
                     className="h-9 text-sm"
                   />
                 </div>
                 <Button onClick={handleSubmit} disabled={loading} className="w-full h-10 text-sm gap-2">
-                  {loading ? "Sending…" : <><Send className="h-3.5 w-3.5" /> Submit Report</>}
+                  {loading ? t("Sending…", lang) : <><Send className="h-3.5 w-3.5" /> {t("Submit Report", lang)}</>}
                 </Button>
               </div>
             )}

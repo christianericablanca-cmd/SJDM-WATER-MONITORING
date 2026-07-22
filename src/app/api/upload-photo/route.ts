@@ -1,7 +1,15 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { checkRateLimit, recordRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
+  const identifier = getClientIdentifier(request);
+
+  const { allowed } = await checkRateLimit(identifier, "upload_photo", 5, 60);
+  if (!allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded. Maximum 5 uploads per hour." }, { status: 429 });
+  }
+
   const formData = await request.formData();
   const file = formData.get("file");
 
@@ -34,6 +42,8 @@ export async function POST(request: Request) {
   }
 
   const { data: urlData } = supabase.storage.from("report-photos").getPublicUrl(fileName);
+
+  await recordRateLimit(identifier, "upload_photo");
 
   return NextResponse.json({ url: urlData.publicUrl }, { status: 201 });
 }

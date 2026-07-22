@@ -5,19 +5,22 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast-provider";
+import { useLanguage } from "@/components/ui/language-provider";
+import { t } from "@/lib/i18n";
 import { Search } from "lucide-react";
 
 export function TrackReportLookup() {
   const router = useRouter();
+  const { lang } = useLanguage();
   const { error: toastError } = useToast();
   const [reportId, setReportId] = useState("");
 
   const handleTrack = () => {
     const trimmed = reportId.trim().toUpperCase();
-    if (!trimmed) { toastError("Enter a Report ID", "e.g. SJDM-WATER-00002"); return; }
+    if (!trimmed) { toastError(t("Enter a Report ID", lang), t("e.g. SJDM-WATER-00002", lang)); return; }
 
     const match = trimmed.match(/SJDM-WATER-0*(\d+)/i);
-    if (!match) { toastError("Invalid format", "Format should be SJDM-WATER-00002"); return; }
+    if (!match) { toastError(t("Invalid format", lang), t("Format should be SJDM-WATER-00002", lang)); return; }
 
     router.push("/report/" + match[1]);
   };
@@ -33,7 +36,7 @@ export function TrackReportLookup() {
       />
       <Button onClick={handleTrack} size="sm" className="h-9 gap-1.5 shrink-0">
         <Search className="h-3.5 w-3.5" />
-        Track
+        {t("Track", lang)}
       </Button>
     </div>
   );
