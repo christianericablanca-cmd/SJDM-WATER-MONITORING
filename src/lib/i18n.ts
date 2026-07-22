@@ -537,6 +537,7 @@ export const dict: Record<string, Record<string, string>> = {
   "Install App": { tl: "I-install ang App" },
   "Install WaterWatch for quick access": { tl: "I-install ang WaterWatch para sa mabilis na access" },
   "Angat Dam": { tl: "Angat Dam" },
+  Boundaries: { tl: "Mga Hangganan" },
   Install: { tl: "I-install" },
   "You are offline": { tl: "Ikaw ay offline" },
   "Back online": { tl: "Online na muli" },
@@ -548,6 +549,7 @@ export const dict: Record<string, Record<string, string>> = {
   "Last updated: July 2026.": { tl: "Huling na-update: Hulyo 2026." },
 
   // Generic
+  "Pin will be placed at the barangay center": { tl: "Ang pin ay ilalagay sa gitna ng barangay" },
   "Please try again.": { tl: "Paki-subukan muli." },
   "An error occurred": { tl: "May naganap na error" },
   "Something went wrong": { tl: "May nangyaring hindi inaasahan" },

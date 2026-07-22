@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BARANGAYS, ISSUE_TYPES, BARANGAY_COORDS, WATER_PROVIDERS } from "@/lib/constants";
+import { BARANGAYS, ISSUE_TYPES, WATER_PROVIDERS } from "@/lib/constants";
 import { Turnstile } from "@/components/reports/turnstile";
 import { useToast } from "@/components/ui/toast-provider";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
-import { Loader2, MapPin, Upload, CheckCircle2, AlertCircle, Droplets, ArrowLeft, ArrowRight, Shield, LocateFixed, Clock } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { LocationPicker } from "@/components/reports/location-picker";
+import { Loader2, Upload, CheckCircle2, AlertCircle, Droplets, ArrowLeft, ArrowRight, Shield, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function compressImage(file: File, maxSize = 1200, quality = 0.8): Promise<Blob> {
@@ -82,10 +82,28 @@ export function ReportForm() {
   const [startTime, setStartTime] = useState("");
   const [startedToday, setStartedToday] = useState(false);
   const [description, setDescription] = useState("");
+  useEffect(() => {
+    const id = "dark-picker-fix";
+    if (!document.getElementById(id)) {
+      const style = document.createElement("style");
+      style.id = id;
+      style.textContent = `
+        html.dark input[type="date"]::-webkit-calendar-picker-indicator,
+        html.dark input[type="time"]::-webkit-calendar-picker-indicator {
+          filter: invert(1) !important;
+          opacity: 1 !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    return () => {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    };
+  }, []);
+
   const [photo, setPhoto] = useState<File | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [showConsentDialog, setShowConsentDialog] = useState(false);
 
   const markTouched = (...fields: string[]) => {
     setTouched((prev) => {
@@ -103,7 +121,7 @@ export function ReportForm() {
     if (!waterProvider) e.water_provider = t("Please select your water provider", lang);
     if (!startDate) e.start_date = t("When did the issue start?", lang);
     if (!startTime) e.start_time = t("What time did it start?", lang);
-    if (!lat || !lng) e.location = t("Please share your GPS location to place the pin accurately", lang);
+    if (!lat || !lng) e.location = t("Pin location is required", lang);
     if (photo && photo.size > 2 * 1024 * 1024) e.photo = t("Photo must be under 2MB", lang);
     if (photo && !["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
       e.photo = t("Only JPG, PNG, or WEBP files are allowed", lang);
@@ -111,34 +129,8 @@ export function ReportForm() {
     return e;
   }, [barangay, issueType, customIssue, waterProvider, startDate, startTime, photo, lat, lng]);
 
-  const handleLocationPick = () => {
-    if (!navigator.geolocation) {
-      toastError(t("Location unavailable", lang), t("Geolocation is not supported by your browser. Try using a different browser.", lang));
-      return;
-    }
-    setShowConsentDialog(true);
-  };
-
-  const handleConsentGranted = () => {
-    setShowConsentDialog(false);
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setLocating(false);
-        toastSuccess(t("Location set", lang), t("Your approximate location has been added to the report.", lang));
-      },
-      () => {
-        setLocating(false);
-        toastError(t("Could not get location", lang), t("Please enable location services in your browser settings and try again.", lang));
-      },
-      { timeout: 10000 },
-    );
-  };
-
   const canNext = (): boolean => {
-    if (step === 0) return !!barangay && !!issueType && !!lat && !!lng && (issueType !== "other" || !!customIssue.trim());
+    if (step === 0) return !!barangay && !!issueType && (issueType !== "other" || !!customIssue.trim());
     if (step === 1) return !!startDate && !!startTime;
     return true;
   };
@@ -146,7 +138,7 @@ export function ReportForm() {
   const handleNext = () => {
     markTouched("barangay", "issue_type", "water_provider", "custom_issue");
     const v = validate();
-    if (step === 0 && (v.barangay || v.issue_type || v.water_provider || v.location || v.custom_issue)) {
+    if (step === 0 && (v.barangay || v.issue_type || v.water_provider || v.custom_issue)) {
       setErrors(v);
       toastError(t("Missing information", lang), t("Please fill in all required fields before continuing.", lang));
       return;
@@ -190,17 +182,16 @@ export function ReportForm() {
 
       const startedAt = `${startDate}T${startTime}:00`;
 
-      const barangayCenter = BARANGAY_COORDS[barangay as keyof typeof BARANGAY_COORDS];
-      const fallbackLat = barangayCenter ? barangayCenter.lat + (Math.random() - 0.5) * 0.006 : 14.8136;
-      const fallbackLng = barangayCenter ? barangayCenter.lng + (Math.random() - 0.5) * 0.006 : 121.0453;
+      const pinLat = lat ?? 14.8136;
+      const pinLng = lng ?? 121.0453;
 
       const res = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           barangay,
-          latitude: lat ?? fallbackLat,
-          longitude: lng ?? fallbackLng,
+          latitude: pinLat,
+          longitude: pinLng,
           issue_type: issueType,
           custom_issue: issueType === "other" ? customIssue.trim() : null,
           water_provider: waterProvider,
@@ -335,23 +326,10 @@ export function ReportForm() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("Pin Location", lang)} <span className="text-destructive">*</span></Label>
-                <Button type="button" variant={lat && lng ? "default" : "outline"} onClick={handleLocationPick} disabled={locating}
-                  className={cn(
-                    "w-full h-12 justify-start gap-3 text-sm font-medium transition-all",
-                    lat && lng ? "bg-water text-white hover:bg-water-dark border-water shadow-sm" : "border-2 border-dashed hover:border-water/60 hover:bg-water-muted/30",
-                  )}>
-                  <MapPin className={cn("h-5 w-5", locating && "animate-pulse")} />
-                  {locating ? t("Getting your location…", lang) :
-                    lat && lng ? t("📍 Pin set ✓", lang) : t("📌 Tap to drop a pin at your location", lang)}
-                </Button>
-                {lat && lng ? (
-                  <p className="text-[11px] text-water-dark flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" /> {t("Pin coordinates:", lang)} {lat.toFixed(5)}, {lng.toFixed(5)}
-                  </p>
-                ) : (
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400 flex items-start gap-1">
-                    <AlertCircle className="h-3 w-3 shrink-0 mt-0.25" />
-                    <span>{t("GPS pin is required. You must share your location for accurate placement of the report marker.", lang)}</span>
+                <LocationPicker barangay={barangay} onPin={(lat, lng) => { setLat(lat); setLng(lng); setErrors((e) => ({ ...e, location: undefined })); }} lat={lat} lng={lng} />
+                {errors.location && (
+                  <p className="text-[11px] text-destructive flex items-center gap-1 mt-0.5">
+                    <AlertCircle className="h-3 w-3" /> {errors.location}
                   </p>
                 )}
               </div>
@@ -441,7 +419,7 @@ export function ReportForm() {
                     "w-full h-11 rounded-lg border text-sm font-medium transition-all flex items-center justify-center gap-2",
                     startedToday
                       ? "bg-water text-white border-water shadow-sm"
-                      : "bg-water-muted/50 text-water-dark border-water/30 hover:bg-water-muted",
+                      : "bg-muted text-foreground border-border hover:bg-muted/80",
                   )}
                 >
                   <Clock className="h-4 w-4" />
@@ -542,12 +520,12 @@ export function ReportForm() {
                 {lat && lng ? (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("Pin Location", lang)}</span>
-                    <span className="font-medium text-xs text-water">{t("GPS ✓", lang)}</span>
+                    <span className="font-medium text-xs text-water">{t("Pin set", lang)} ✓</span>
                   </div>
                 ) : (
                   <div className="flex items-start gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-xs text-destructive">
                     <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span>{t("GPS location is required. Go back to step 1 and share your location to submit this report.", lang)}</span>
+                    <span>{t("Pin location is not set. Go back to step 1 and select a barangay to place the pin.", lang)}</span>
                   </div>
                 )}
                 {description && (
@@ -594,45 +572,6 @@ export function ReportForm() {
           </Button>
         )}
       </div>
-
-      <Dialog open={showConsentDialog} onOpenChange={setShowConsentDialog}>
-        <DialogContent className="max-w-sm rounded-2xl">
-          <DialogHeader>
-            <div className="w-12 h-12 rounded-2xl bg-water-muted flex items-center justify-center mx-auto mb-2">
-              <LocateFixed className="h-6 w-6 text-water" />
-            </div>
-            <DialogTitle className="text-center text-lg">{t("Share your location?", lang)}</DialogTitle>
-            <p className="text-center text-xs text-muted-foreground leading-relaxed">
-              {t("Your precise address is never shared publicly. Only a blurred coordinate is stored to place a pin on the community map.", lang)}
-            </p>
-          </DialogHeader>
-          <div className="space-y-2.5 px-1">
-            <div className="flex items-start gap-2.5 p-2.5 bg-muted/50 rounded-lg">
-              <Shield className="h-4 w-4 text-water shrink-0 mt-0.5" />
-              <div className="text-[11px] text-muted-foreground leading-relaxed">
-                {t("Privacy first.", lang)}{" "}{t("Your exact address is never shown. Only the approximate area appears on the map.", lang)}
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5 p-2.5 bg-muted/50 rounded-lg">
-              <CheckCircle2 className="h-4 w-4 text-water shrink-0 mt-0.5" />
-              <div className="text-[11px] text-muted-foreground leading-relaxed">
-                {t("Better accuracy.", lang)}{" "}{t("Without GPS, the pin is randomly placed near the barangay center and may be inaccurate.", lang)}
-              </div>
-            </div>
-            <div className="flex items-start gap-2.5 p-2.5 bg-destructive/10 rounded-lg border border-destructive/20">
-              <AlertCircle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
-              <div className="text-[11px] text-destructive leading-relaxed">
-                {t("GPS location is required to submit a report. Random pins are not allowed.", lang)}
-              </div>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 pt-1">
-            <Button onClick={handleConsentGranted} className="w-full h-11 gap-2 text-sm">
-              <LocateFixed className="h-4 w-4" /> {t("Share My Location", lang)}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
     </div>
   );

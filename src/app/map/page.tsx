@@ -4,7 +4,7 @@ import { AutoResolveTrigger } from "@/components/map/auto-resolve-trigger";
 import { DamLevelWidget } from "@/components/map/dam-level-widget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ISSUE_TYPES, ISSUE_EMOJI } from "@/lib/constants";
+import { ISSUE_TYPES, ISSUE_EMOJI, BARANGAYS } from "@/lib/constants";
 import { getConfidenceLevel } from "@/lib/utils";
 import { ClipboardList, MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -81,16 +81,18 @@ export default async function MapPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {([
           { label: t("Active Reports", lang), value: activeReports.length, icon: ClipboardList, color: "text-water", bg: "bg-water-muted" },
-          { label: t("Barangays", lang), value: new Set(activeReports.map((r) => r.barangay)).size, icon: MapPin, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20" },
+          { label: t("Barangays with Issues", lang), value: new Set(activeReports.map((r) => r.barangay)).size, total: BARANGAYS.length, icon: MapPin, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20" },
           { label: t("Resolved", lang), value: reports?.filter((r) => r.status === "resolved").length ?? 0, icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-950/20" },
-          { label: t("Total Reports", lang), value: totalReports, icon: AlertTriangle, color: "text-muted-foreground", bg: "bg-muted" },
-        ] as const).map((stat) => (
+          { label: t("Total Reports", lang), value: totalReports, icon: AlertTriangle, color: "text-foreground", bg: "bg-muted dark:bg-muted/50" },
+        ] as const).map((stat: any) => (
           <Card key={stat.label} className="p-3 sm:p-4 shadow-card flex items-center gap-3">
             <div className={cn("w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0", stat.bg)}>
               <stat.icon className={cn("h-4 w-4 sm:h-5 sm:w-5", stat.color)} />
             </div>
             <div>
-              <p className="text-lg sm:text-xl font-bold tabular-nums leading-tight">{stat.value}</p>
+              <p className="text-lg sm:text-xl font-bold tabular-nums leading-tight">
+                {stat.value}{stat.total ? <span className="text-sm font-normal text-muted-foreground"> / {stat.total}</span> : null}
+              </p>
               <p className="text-[10px] sm:text-xs text-muted-foreground">{stat.label}</p>
             </div>
           </Card>

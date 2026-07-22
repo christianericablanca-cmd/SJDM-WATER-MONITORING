@@ -1,14 +1,14 @@
 import { cookies } from "next/headers";
 import { t } from "@/lib/i18n";
 import { createServerSupabase } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
-import { Phone, MapPin, Globe, CheckCircle2, Clock, PlusCircle, Droplets, Truck, WashingMachine } from "lucide-react";
+import { Phone, MapPin, CheckCircle2, Clock, PlusCircle, Droplets, Truck, WashingMachine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
 import type { Business } from "@/lib/types";
 import Link from "next/link";
+import { BusinessCard } from "@/components/directory/business-card";
 
 export const revalidate = 300;
 
@@ -34,6 +34,7 @@ export default async function DirectoryPage() {
   const { data: businesses } = await supabase
     .from("businesses")
     .select("*")
+    .eq("disabled", false)
     .order("verified", { ascending: false })
     .order("name");
 
@@ -45,7 +46,7 @@ export default async function DirectoryPage() {
   });
 
   return (
-    <div className="page-container py-6 sm:py-8 space-y-8">
+    <div className="page-container py-4 sm:py-6 space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
         <div>
           <h1 className="section-title">{t("Services", lang)}</h1>
@@ -67,90 +68,28 @@ export default async function DirectoryPage() {
 
         return (
           <section key={cat.value}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center", colorCls)}>
-                <Icon className="h-4.5 w-4.5" />
+            <div className="flex items-center gap-2 mb-3">
+              <div className={cn("w-7 h-7 rounded-lg flex items-center justify-center", colorCls)}>
+                <Icon className="h-3.5 w-3.5" />
               </div>
-              <div>
-                <h2 className="text-lg font-semibold">{t(cat.label, lang)}</h2>
-                {cat.value === "water_tanker" && (
-                  <p className="text-[11px] text-muted-foreground">{t("PRIVATE PAID SERVICE — Not affiliated with the LGU", lang)}</p>
-                )}
-              </div>
-              <Badge variant="secondary" className="ml-auto text-[10px]">{items.length}</Badge>
+              <h3 className="text-sm font-semibold">{t(cat.label, lang)}</h3>
+              {cat.value === "water_tanker" && (
+                <span className="text-[9px] text-muted-foreground">{t("PRIVATE PAID SERVICE — Not affiliated with the LGU", lang)}</span>
+              )}
+              <Badge variant="secondary" className="ml-auto text-[9px] px-1.5">{items.length}</Badge>
             </div>
 
             {items.length === 0 ? (
-              <div className="text-center py-10 bg-muted/30 rounded-xl border border-dashed">
-                <p className="text-sm text-muted-foreground">{t("No listings in this category yet.", lang)}</p>
-                <Button variant="link" size="sm" asChild className="mt-1">
+              <div className="text-center py-6 bg-muted/30 rounded-lg border border-dashed">
+                <p className="text-xs text-muted-foreground">{t("No listings in this category yet.", lang)}</p>
+                <Button variant="link" size="sm" asChild className="mt-0.5 text-xs">
                   <Link href="/directory/claim">{t("Be the first to add one", lang)}</Link>
                 </Button>
               </div>
             ) : (
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-1.5">
                 {items.map((biz) => (
-                  <Card key={biz.id} className="shadow-card border-border/60 hover:shadow-card-hover transition-all duration-200">
-                    <CardHeader className="pb-3">
-                      {biz.photo_url && (
-                        <div className="w-full h-36 -mx-6 -mt-6 mb-3 rounded-t-xl overflow-hidden bg-muted">
-                          <img src={biz.photo_url} alt={biz.name} className="w-full h-full object-cover" loading="lazy" />
-                        </div>
-                      )}
-                      <div className="flex items-start justify-between gap-2">
-                        <CardTitle className="text-base">{biz.name}</CardTitle>
-                        {biz.verified ? (
-                          <Badge variant="success" className="shrink-0 text-[10px] px-1.5 py-0">
-                            <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" /> {t("Verified", lang)}
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="shrink-0 text-[10px] px-1.5 py-0">{t("Community", lang)}</Badge>
-                        )}
-                      </div>
-                      <CardDescription className="text-sm">
-                        {biz.address}, {biz.barangay}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-1.5 text-sm">
-                      {biz.contact && (
-                        <a href={`tel:${biz.contact}`}
-                          className="flex items-center gap-2 text-muted-foreground hover:text-water transition-colors">
-                          <Phone className="h-3.5 w-3.5" /> {biz.contact}
-                        </a>
-                      )}
-                      {biz.facebook && (
-                        <a href={biz.facebook} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-2 text-muted-foreground hover:text-water transition-colors">
-                          <Globe className="h-3.5 w-3.5" /> {t("Facebook Page", lang)}
-                        </a>
-                      )}
-                      {biz.operating_hours && (
-                        <div className="flex items-center gap-2 text-muted-foreground">
-                          <Clock className="h-3.5 w-3.5" /> {biz.operating_hours}
-                        </div>
-                      )}
-                      {biz.delivery_available !== null && (
-                        <div className="text-muted-foreground">
-                          {t("Delivery:", lang)}{" "}{biz.delivery_available ? t("Available", lang) : t("Not available", lang)}
-                        </div>
-                      )}
-                      {biz.estimated_fee && (
-                        <div className="text-muted-foreground">{t("Fee:", lang)}{" "}{biz.estimated_fee}</div>
-                      )}
-                      {biz.latitude && biz.longitude && (
-                        <a href={`https://www.google.com/maps?q=${biz.latitude},${biz.longitude}`}
-                          target="_blank" rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-water text-xs font-medium hover:underline mt-1">
-                          <MapPin className="h-3 w-3" /> {t("View on Map", lang)}
-                        </a>
-                      )}
-                      {biz.last_verified && (
-                        <p className="text-[11px] text-muted-foreground pt-1 border-t mt-2">
-                          {t("Checked", lang)} {formatDate(biz.last_verified)}
-                        </p>
-                      )}
-                    </CardContent>
-                  </Card>
+                  <BusinessCard key={biz.id} biz={biz} />
                 ))}
               </div>
             )}

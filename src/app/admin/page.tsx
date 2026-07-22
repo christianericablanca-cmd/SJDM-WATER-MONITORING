@@ -55,6 +55,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     { count: resolvedCount },
     { count: deniedCount },
     { count: verifiedBizCount },
+    { data: contacts, count: contactCount },
   ] = await Promise.all([
     supabase.from("reports").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(reportPage * PAGE_SIZE, (reportPage + 1) * PAGE_SIZE - 1),
     supabase.from("businesses").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(servicePage * PAGE_SIZE, (servicePage + 1) * PAGE_SIZE - 1),
@@ -66,6 +67,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "resolved"),
     supabase.from("reports").select("*", { count: "exact", head: true }).eq("denied", true),
     supabase.from("businesses").select("*", { count: "exact", head: true }).eq("verified", true),
+    supabase.from("emergency_contacts").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(announcementPage * PAGE_SIZE, (announcementPage + 1) * PAGE_SIZE - 1),
   ]);
 
   return (
@@ -79,6 +81,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       totalReports={reportCount ?? 0}
       totalBusinesses={businessCount ?? 0}
       totalAnnouncements={announcementCount ?? 0}
+      totalContacts={contactCount ?? 0}
+      contacts={contacts ?? []}
       pageSize={PAGE_SIZE}
       approvedCount={approvedCount ?? 0}
       resolvedCount={resolvedCount ?? 0}

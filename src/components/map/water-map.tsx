@@ -1,17 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef, memo } from "react";
 import dynamic from "next/dynamic";
 import type { WaterReport, Business, WaterProvider } from "@/lib/types";
 import { SJDM_CENTER, ISSUE_EMOJI, ISSUE_TYPES, WATER_PROVIDERS, WATER_PROVIDER_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MapPin, ChevronDown, ChevronUp, Filter, Store, Phone, Truck, Clock } from "lucide-react";
+import { Search, MapPin, ChevronDown, ChevronUp, Filter, Store, Phone, Truck, Clock, Layers, RefreshCw } from "lucide-react";
 import { timeSince } from "@/lib/utils";
 import { BARANGAYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
+import { BarangayBoundaries } from "./barangay-boundaries";
+import { useMap } from "react-leaflet";
+import { createClient } from "@/lib/supabase/client";
 
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
@@ -63,12 +66,18 @@ const CATEGORY_LABELS: Record<string, string> = {
   laundry_services: "Laundry",
 };
 
-function MapInner({ reports, businesses, reportIconCache, filteredReports, showBusinesses, businessesWithCoords, damData, lang }: {
+const BoundaryLayer = memo(function BoundaryLayer({ visible, lang }: { visible: boolean; lang: "en" | "tl" }) {
+  const map = useMap();
+  return <BarangayBoundaries map={map} visible={visible} lang={lang} />;
+});
+
+const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, filteredReports, showBusinesses, showBoundaries, businessesWithCoords, damData, lang }: {
   reports: WaterReport[];
   businesses: Business[];
   reportIconCache: Record<string, any>;
   filteredReports: WaterReport[];
   showBusinesses: boolean;
+  showBoundaries: boolean;
   businessesWithCoords: Business[];
   damData: { level: number; normalHigh: number; date: string } | null;
   lang: "en" | "tl";
@@ -113,6 +122,7 @@ function MapInner({ reports, businesses, reportIconCache, filteredReports, showB
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      <BoundaryLayer visible={showBoundaries} lang={lang} />
       {damData && damIcon && (
         <Marker position={[14.9102, 121.1605]} icon={damIcon}>
           <Popup>
@@ -225,21 +235,195 @@ function MapInner({ reports, businesses, reportIconCache, filteredReports, showB
       ))}
     </MapContainer>
   );
-}
+});
 
 export function WaterMap({ reports, businesses }: WaterMapProps) {
   const { lang } = useLanguage();
+  const [liveReports, setLiveReports] = useState<WaterReport[]>(reports);
   const [search, setSearch] = useState("");
   const [barangayFilter, setBarangayFilter] = useState<string>("all");
   const [issueFilter, setIssueFilter] = useState<string>("all");
   const [providerFilter, setProviderFilter] = useState<string>("all");
   const [showFilters, setShowFilters] = useState(typeof window !== "undefined" && window.innerWidth >= 640);
   const [showBusinesses, setShowBusinesses] = useState(true);
+  const [showBoundaries, setShowBoundaries] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [damData, setDamData] = useState<{ level: number; normalHigh: number; date: string } | null>(null);
+  const [liveCount, setLiveCount] = useState(0);
+  const [rtConnected, setRtConnected] = useState(false);
+  const knownIdsRef = useRef<Set<string>>(new Set());
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel("reports-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "reports" },
+        (payload) => {
+          const r = payload.new as any;
+          const report: WaterReport = {
+            id: String(r.id),
+            barangay: r.barangay,
+            latitude: r.latitude,
+            longitude: r.longitude,
+            issue_type: r.issue_type,
+            description: r.description,
+            photo_url: r.photo_url,
+            street_sitio: r.street_sitio,
+            status: r.status,
+            report_id_display: r.report_id_display,
+            started_at: r.started_at,
+            created_at: r.created_at,
+            resolved_at: r.resolved_at,
+            confirmation_count: r.confirmation_count || 0,
+            water_provider: r.water_provider,
+            verified: r.verified,
+            denied: r.denied,
+          };
+          setLiveReports((prev) => {
+            if (prev.some((p) => p.id === report.id)) return prev;
+            return [report, ...prev];
+          });
+          setLiveCount((c) => c + 1);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "reports" },
+        (payload) => {
+          const r = payload.new as any;
+          setLiveReports((prev) =>
+            prev.map((p) =>
+              p.id === String(r.id)
+                ? {
+                    ...p,
+                    barangay: r.barangay ?? p.barangay,
+                    latitude: r.latitude ?? p.latitude,
+                    longitude: r.longitude ?? p.longitude,
+                    issue_type: r.issue_type ?? p.issue_type,
+                    description: r.description ?? p.description,
+                    photo_url: r.photo_url ?? p.photo_url,
+                    street_sitio: r.street_sitio ?? p.street_sitio,
+                    status: r.status ?? p.status,
+                    report_id_display: r.report_id_display ?? p.report_id_display,
+                    started_at: r.started_at ?? p.started_at,
+                    created_at: r.created_at ?? p.created_at,
+                    resolved_at: r.resolved_at ?? p.resolved_at,
+                    confirmation_count: r.confirmation_count ?? p.confirmation_count,
+                    water_provider: r.water_provider ?? p.water_provider,
+                    verified: r.verified ?? p.verified,
+                    denied: r.denied ?? p.denied,
+                  }
+                : p,
+            )
+          );
+        },
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") setRtConnected(true);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    knownIdsRef.current = new Set(liveReports.map((r) => r.id));
+  }, [reports]);
+
+  useEffect(() => {
+    if (liveCount > 0) {
+      const timer = setTimeout(() => setLiveCount(0), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [liveCount]);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("reports")
+          .select("*")
+          .eq("verified", true)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (!data) return;
+        const prevIds = knownIdsRef.current;
+        const newIds = new Set<string>();
+        let added = 0;
+        let updated = 0;
+        for (const r of data) {
+          const id = String(r.id);
+          newIds.add(id);
+          if (!prevIds.has(id)) {
+            const report: WaterReport = {
+              id,
+              barangay: r.barangay,
+              latitude: r.latitude,
+              longitude: r.longitude,
+              issue_type: r.issue_type,
+              description: r.description,
+              photo_url: r.photo_url,
+              street_sitio: r.street_sitio,
+              status: r.status,
+              report_id_display: r.report_id_display,
+              started_at: r.started_at,
+              created_at: r.created_at,
+              resolved_at: r.resolved_at,
+              confirmation_count: r.confirmation_count || 0,
+              water_provider: r.water_provider,
+              verified: r.verified,
+              denied: r.denied,
+            };
+            setLiveReports((prev) => (prev.some((p) => p.id === id) ? prev : [report, ...prev]));
+            added++;
+          } else {
+            setLiveReports((prev) =>
+              prev.map((p) =>
+                p.id === id
+                  ? {
+                      ...p,
+                      barangay: r.barangay,
+                      latitude: r.latitude,
+                      longitude: r.longitude,
+                      issue_type: r.issue_type,
+                      description: r.description,
+                      photo_url: r.photo_url,
+                      street_sitio: r.street_sitio,
+                      status: r.status,
+                      report_id_display: r.report_id_display,
+                      started_at: r.started_at,
+                      created_at: r.created_at,
+                      resolved_at: r.resolved_at,
+                      confirmation_count: r.confirmation_count || 0,
+                      water_provider: r.water_provider,
+                      verified: r.verified,
+                      denied: r.denied,
+                    }
+                  : p,
+              ),
+            );
+            updated++;
+          }
+        }
+        const removed = [...prevIds].filter((id) => !newIds.has(id));
+        if (removed.length > 0) {
+          setLiveReports((prev) => prev.filter((p) => !removed.includes(p.id)));
+        }
+        knownIdsRef.current = newIds;
+        const totalChanges = added + updated + removed.length;
+        if (totalChanges > 0) setLiveCount((c) => c + totalChanges);
+      } catch {
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     fetch("/api/dam-levels")
@@ -260,14 +444,14 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   }, [mounted]);
 
   const filteredReports = useMemo(() => {
-    return reports.filter((r) => {
+    return liveReports.filter((r) => {
       if (barangayFilter !== "all" && r.barangay !== barangayFilter) return false;
       if (issueFilter !== "all" && r.issue_type !== issueFilter) return false;
       if (providerFilter !== "all" && (r.water_provider || "unknown") !== providerFilter) return false;
       if (search && !r.barangay.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
     });
-  }, [reports, barangayFilter, issueFilter, providerFilter, search]);
+  }, [liveReports, barangayFilter, issueFilter, providerFilter, search]);
 
   const businessesWithCoords = useMemo(() => {
     return businesses.filter((b) => b.latitude != null && b.longitude != null);
@@ -289,7 +473,17 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         <div className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm min-w-0">
           <MapPin className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-water shrink-0" />
           <span className="font-medium tabular-nums">{filteredReports.length}</span>
-          <span className="text-muted-foreground hidden sm:inline">{t("of", lang)} {reports.length} {t("reports", lang)}</span>
+          <span className="text-muted-foreground hidden sm:inline">{t("of", lang)} {liveReports.length} {t("reports", lang)}</span>
+          {liveCount > 0 && (
+            <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 animate-pulse">
+              <RefreshCw className="h-3 w-3" />
+              +{liveCount} new
+            </span>
+          )}
+          <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
+            <RefreshCw className="h-2.5 w-2.5" />
+            live
+          </span>
           <span className="text-muted-foreground text-[10px] sm:text-xs truncate">
             · {new Set(filteredReports.map((r) => r.barangay)).size} {t("barangays", lang)}
           </span>
@@ -368,6 +562,18 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
           </div>
         </div>
         <button
+          onClick={() => setShowBoundaries(!showBoundaries)}
+          className={cn(
+            "flex items-center gap-1.5 text-[10px] sm:text-xs py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px]",
+            showBoundaries
+              ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+              : "bg-muted border-border text-muted-foreground",
+          )}
+        >
+          <Layers className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">{t("Boundaries", lang)}</span>
+        </button>
+        <button
           onClick={() => setShowBusinesses(!showBusinesses)}
           className={cn(
             "flex items-center gap-1.5 text-[10px] sm:text-xs py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px]",
@@ -391,6 +597,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
             reportIconCache={reportIconCache}
             filteredReports={filteredReports}
             showBusinesses={showBusinesses}
+            showBoundaries={showBoundaries}
             businessesWithCoords={businessesWithCoords}
             damData={damData}
             lang={lang}

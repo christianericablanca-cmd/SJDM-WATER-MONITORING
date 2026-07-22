@@ -1,19 +1,22 @@
 export type Barangay =
+  | "Assumption"
   | "Bagong Buhay"
-  | "Bagong Pag-Asa"
-  | "Bagong Silang"
-  | "Bagong Yaman"
-  | "Buenavista"
-  | "City Proper"
+  | "Citrus"
+  | "Ciudad Real"
   | "Dulong Bayan"
   | "Fatima"
+  | "Francisco Homes-Guijo"
+  | "Francisco Homes-Mulawin"
+  | "Francisco Homes-Narra"
+  | "Francisco Homes-Yakal"
+  | "Gaya-gaya"
   | "Graceville"
   | "Gumaoc Central"
   | "Gumaoc East"
   | "Gumaoc West"
+  | "Kaybanban"
   | "Kaypian"
   | "Lawang Pari"
-  | "Mabolo"
   | "Maharlika"
   | "Minuyan"
   | "Minuyan II"
@@ -22,8 +25,12 @@ export type Barangay =
   | "Minuyan V"
   | "Muzon"
   | "Muzon East"
+  | "Muzon South"
   | "Muzon West"
+  | "Paradise III"
   | "Poblacion"
+  | "Poblacion I"
+  | "St. Martin de Porres"
   | "Sapang Palay"
   | "Santo Cristo"
   | "San Isidro"
@@ -33,12 +40,9 @@ export type Barangay =
   | "San Rafael"
   | "San Roque"
   | "Sta. Cruz"
-  | "Sta. Monica"
-  | "Sta. Rita"
   | "Sto. Niño"
   | "Sto. Niño II"
-  | "Tungkong Mangga"
-  | "Tumana";
+  | "Tungkong Mangga";
 
 export type IssueType =
   | "no_water"
@@ -90,6 +94,7 @@ export interface Business {
   latitude: number | null;
   longitude: number | null;
   verified: boolean;
+  disabled: boolean;
   last_verified: string | null;
   delivery_available: boolean | null;
   operating_hours: string | null;

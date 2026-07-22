@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BARANGAYS, BUSINESS_CATEGORIES, SJDM_CENTER } from "@/lib/constants";
+import { BARANGAYS, BARANGAY_COORDS, BUSINESS_CATEGORIES, SJDM_CENTER } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast-provider";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
@@ -40,7 +40,9 @@ export function BusinessClaimForm() {
   const [contact, setContact] = useState("");
   const [facebook, setFacebook] = useState("");
   const [deliveryAvailable, setDeliveryAvailable] = useState("");
-  const [operatingHours, setOperatingHours] = useState("");
+  const [openTime, setOpenTime] = useState("");
+  const [closeTime, setCloseTime] = useState("");
+  const operatingHours = openTime && closeTime ? `${openTime} — ${closeTime}` : "";
   const [coverageArea, setCoverageArea] = useState("");
   const [estimatedFee, setEstimatedFee] = useState("");
   const [photo, setPhoto] = useState<File | null>(null);
@@ -60,6 +62,16 @@ export function BusinessClaimForm() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    if (!barangay) return;
+    const coords = BARANGAY_COORDS[barangay as keyof typeof BARANGAY_COORDS];
+    if (coords) {
+      setMapCenter(coords);
+      setLat(coords.lat);
+      setLng(coords.lng);
+    }
+  }, [barangay]);
 
   const validate = (): FieldErrors => {
     const e: FieldErrors = {};
@@ -443,8 +455,13 @@ export function BusinessClaimForm() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("Operating Hours", lang)}</Label>
-                <Input value={operatingHours} onChange={(e) => setOperatingHours(e.target.value)}
-                  placeholder={t("e.g. 6:00 AM — 8:00 PM daily", lang)} className="h-10" />
+                <div className="flex items-center gap-2">
+                  <input type="time" value={openTime} onChange={(e) => setOpenTime(e.target.value)}
+                    className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                  <span className="text-muted-foreground text-xs">—</span>
+                  <input type="time" value={closeTime} onChange={(e) => setCloseTime(e.target.value)}
+                    className="flex-1 h-10 rounded-md border border-input bg-background px-3 py-1 text-xs shadow-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                </div>
               </div>
               <div className="space-y-1.5">
                 <Label>{t("Coverage Area", lang)}</Label>
@@ -517,6 +534,9 @@ function MapLocationPicker({
 
   useEffect(() => {
     setPos(center);
+    if (mapRef.current) {
+      mapRef.current.setView([center.lat, center.lng], 14, { animate: true });
+    }
   }, [center.lat, center.lng]);
 
   useEffect(() => {
