@@ -1,0 +1,217 @@
+@import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-background: oklch(0.98 0.003 240);
+  --color-foreground: oklch(0.15 0.01 240);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.15 0.01 240);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.15 0.01 240);
+
+  --color-primary: oklch(0.55 0.18 235);
+  --color-primary-foreground: oklch(0.98 0 0);
+
+  --color-secondary: oklch(0.94 0.03 240);
+  --color-secondary-foreground: oklch(0.25 0.02 240);
+
+  --color-muted: oklch(0.95 0.01 240);
+  --color-muted-foreground: oklch(0.55 0.02 240);
+
+  --color-accent: oklch(0.92 0.04 235);
+  --color-accent-foreground: oklch(0.25 0.04 235);
+
+  --color-destructive: oklch(0.58 0.22 25);
+  --color-destructive-foreground: oklch(0.98 0 0);
+
+  --color-border: oklch(0.88 0.01 240);
+  --color-input: oklch(0.88 0.01 240);
+  --color-ring: oklch(0.55 0.18 235);
+
+  --color-water: oklch(0.55 0.18 235);
+  --color-water-dark: oklch(0.42 0.19 240);
+  --color-water-light: oklch(0.85 0.08 225);
+  --color-water-muted: oklch(0.92 0.04 230);
+
+  --color-success: oklch(0.55 0.18 155);
+  --color-warning: oklch(0.68 0.18 85);
+  --color-danger: oklch(0.58 0.22 25);
+
+  --radius: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.04), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.08);
+  --shadow-dropdown: 0 4px 16px 0 rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+}
+
+.dark {
+  --color-background: oklch(0.13 0.01 240);
+  --color-foreground: oklch(0.95 0.01 240);
+  --color-card: oklch(0.18 0.01 240);
+  --color-card-foreground: oklch(0.95 0.01 240);
+  --color-popover: oklch(0.18 0.01 240);
+  --color-popover-foreground: oklch(0.95 0.01 240);
+  --color-primary: oklch(0.62 0.18 235);
+  --color-primary-foreground: oklch(0.15 0.01 240);
+  --color-secondary: oklch(0.25 0.02 240);
+  --color-secondary-foreground: oklch(0.85 0.02 240);
+  --color-muted: oklch(0.22 0.01 240);
+  --color-muted-foreground: oklch(0.65 0.02 240);
+  --color-accent: oklch(0.28 0.04 235);
+  --color-accent-foreground: oklch(0.85 0.04 235);
+  --color-border: oklch(0.28 0.015 240);
+  --color-input: oklch(0.28 0.015 240);
+  --color-water: oklch(0.62 0.18 235);
+  --color-water-dark: oklch(0.50 0.19 240);
+  --color-water-light: oklch(0.28 0.12 225);
+  --color-water-muted: oklch(0.22 0.06 230);
+  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.2);
+  --shadow-card-hover: 0 4px 12px 0 rgb(0 0 0 / 0.3);
+  --shadow-dropdown: 0 4px 16px 0 rgb(0 0 0 / 0.3);
+}
+
+@layer base {
+  *, *::before, *::after {
+    @apply border-border;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    line-height: 1.6;
+    overscroll-behavior: none;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    line-height: 1.2;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  ::selection {
+    background-color: var(--color-water-light);
+    color: var(--color-water-dark);
+  }
+
+  /* Safe area padding for mobile */
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+}
+
+@layer components {
+  .page-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-title {
+    @apply text-2xl sm:text-3xl font-bold tracking-tight;
+  }
+
+  .section-subtitle {
+    @apply text-muted-foreground mt-1 max-w-2xl text-sm sm:text-base;
+  }
+
+  .stat-card {
+    @apply bg-card border rounded-xl p-4 sm:p-5 shadow-card transition-all duration-200 hover:shadow-card-hover;
+  }
+
+  .glass {
+    @apply bg-background/80 backdrop-blur-md border-b;
+  }
+
+  .fade-in {
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  .slide-up {
+    animation: slideUp 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .skeleton {
+    @apply bg-muted rounded-md animate-pulse;
+  }
+}
+
+/* Leaflet overrides for mobile */
+.leaflet-popup-content-wrapper {
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-dropdown) !important;
+  padding: 2px !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+}
+
+.leaflet-container {
+  font-family: "Inter", system-ui, -apple-system, sans-serif !important;
+  -webkit-tap-highlight-color: transparent !important;
+}
+
+.leaflet-control-zoom a {
+  width: 36px !important;
+  height: 36px !important;
+  line-height: 36px !important;
+  font-size: 18px !important;
+}
+
+.custom-marker {
+  background: none !important;
+  border: none !important;
+}
+
+/* Mobile tap targets */
+@media (max-width: 640px) {
+  button, a, select, input, textarea {
+    min-height: 44px;
+  }
+
+  .leaflet-control-zoom a {
+    width: 44px !important;
+    height: 44px !important;
+    line-height: 44px !important;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 2px;
+}
