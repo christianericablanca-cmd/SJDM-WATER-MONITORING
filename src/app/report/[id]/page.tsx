@@ -75,8 +75,7 @@ export default async function TrackReportPage({
               </div>
               <Badge variant={
                 effectiveStatus === "approved" ? "success" :
-                effectiveStatus === "stale" ? "secondary" :
-                effectiveStatus === "under_review" ? "default" : "outline"
+                effectiveStatus === "stale" ? "secondary" : "outline"
               }>
                 {STATUS_LABELS[effectiveStatus] || effectiveStatus.replace("_", " ")}
               </Badge>

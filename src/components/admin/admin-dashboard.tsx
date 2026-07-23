@@ -652,8 +652,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-medium">{r.barangay}</span>
                               <Badge variant={
-                                r.status === "resolved" ? "success" :
-                                r.status === "approved" || (r.status === "under_review" && r.verified) ? "success" :
+                                r.status === "resolved" || r.status === "approved" ? "success" :
                                 r.status === "stale" ? "secondary" :
                                 r.status === "denied" ? "destructive" : "outline"
                               } className="text-[8px] px-1 py-0">{STATUS_LABELS[r.status] || r.status}</Badge>
@@ -883,7 +882,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-mono text-[10px] font-medium">{report.report_id_display}</span>
                         <Badge variant={
-                          report.status === "resolved" || report.status === "approved" || (report.status === "under_review" && report.verified) ? "success" :
+                          report.status === "resolved" || report.status === "approved" ? "success" :
                           report.status === "denied" ? "destructive" :
                           report.status === "stale" ? "secondary" : "outline"
                         } className="text-[8px] px-1 py-0">{STATUS_LABELS[report.status] || report.status}</Badge>
@@ -928,11 +927,11 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                           <td className="px-3 py-3 hidden xl:table-cell"><span className="text-[11px] text-muted-foreground">{WATER_PROVIDERS.find((p) => p.value === report.water_provider)?.label || report.water_provider}</span></td>
                           <td className="px-3 py-3">
                             <Badge variant={
-                              report.status === "resolved" || report.status === "approved" || (report.status === "under_review" && report.verified) ? "success" :
+                              report.status === "resolved" || report.status === "approved" ? "success" :
                               report.status === "denied" ? "destructive" :
                               report.status === "stale" ? "secondary" : "outline"
                             } className="text-[9px] px-1.5 py-0">
-                              {(report.status === "under_review" && report.verified) ? STATUS_LABELS.approved : STATUS_LABELS[report.status] || report.status.replace("_", " ")}
+                              {STATUS_LABELS[report.status] || report.status.replace("_", " ")}
                             </Badge>
                           </td>
                           <td className="px-3 py-3 hidden md:table-cell"><span className="text-[11px] text-muted-foreground">{timeSince(report.created_at)}</span></td>
@@ -1643,12 +1642,11 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 <div className="flex items-center gap-2">
                   <DialogTitle className="text-sm sm:text-base">{viewReport.barangay}</DialogTitle>
                   <Badge variant={
-                    viewReport.status === "resolved" || viewReport.status === "approved" || (viewReport.status === "under_review" && viewReport.verified) ? "success" :
+                    viewReport.status === "resolved" || viewReport.status === "approved" ? "success" :
                     viewReport.status === "denied" ? "destructive" :
-                    viewReport.status === "stale" ? "secondary" :
-                    viewReport.status === "under_review" ? "default" : "outline"
+                    viewReport.status === "stale" ? "secondary" : "outline"
                   } className="text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0 shrink-0">
-                    {(viewReport.status === "under_review" && viewReport.verified) ? STATUS_LABELS.approved : STATUS_LABELS[viewReport.status] || viewReport.status.replace("_", " ")}
+                    {STATUS_LABELS[viewReport.status] || viewReport.status.replace("_", " ")}
                   </Badge>
                 </div>
               </DialogHeader>

@@ -54,7 +54,6 @@ export type IssueType =
 
 export type ReportStatus =
   | "submitted"
-  | "under_review"
   | "approved"
   | "denied"
   | "resolved"

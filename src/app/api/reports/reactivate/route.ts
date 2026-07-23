@@ -68,7 +68,7 @@ export async function POST(request: Request) {
   const { error: updateError } = await supabase
     .from("reports")
     .update({
-      status: "under_review",
+      status: "submitted",
       verified: false,
       denied: false,
       resolved_at: null,

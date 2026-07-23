@@ -155,12 +155,11 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-semibold text-xs sm:text-sm">{report.barangay}</span>
                   <Badge variant={
-                    report.status === "resolved" || report.status === "approved" || (report.status === "under_review" && report.verified) ? "success" :
+                    report.status === "approved" || report.status === "resolved" ? "success" :
                     report.status === "denied" ? "destructive" :
-                    report.status === "stale" ? "secondary" :
-                    report.status === "submitted" ? "outline" : "default"
+                    report.status === "stale" ? "secondary" : "default"
                   } className="text-[10px] sm:text-xs px-1.5 py-0">
-                    {(report.status === "under_review" && report.verified) ? STATUS_LABELS.approved : STATUS_LABELS[report.status] || report.status.replace("_", " ")}
+                    {STATUS_LABELS[report.status] || report.status.replace("_", " ")}
                   </Badge>
                 </div>
                 <div className="text-xs sm:text-sm">
@@ -741,11 +740,11 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
                   <span className="font-semibold text-sm">{previewReport.barangay}</span>
                 </div>
                 <Badge variant={
-                  previewReport.status === "resolved" || previewReport.status === "approved" || (previewReport.status === "under_review" && previewReport.verified) ? "success" :
+                  previewReport.status === "approved" || previewReport.status === "resolved" ? "success" :
                   previewReport.status === "denied" ? "destructive" :
-                  previewReport.status === "stale" ? "secondary" : "outline"
+                  previewReport.status === "stale" ? "secondary" : "default"
                 } className="text-[10px] px-1.5 py-0">
-                  {(previewReport.status === "under_review" && previewReport.verified) ? STATUS_LABELS.approved : STATUS_LABELS[previewReport.status] || previewReport.status.replace("_", " ")}
+                  {STATUS_LABELS[previewReport.status] || previewReport.status.replace("_", " ")}
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground">{t(ISSUE_TYPES.find(i => i.value === previewReport.issue_type)?.label || previewReport.issue_type, lang)}</p>

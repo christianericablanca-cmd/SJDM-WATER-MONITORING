@@ -34,7 +34,6 @@ export const ISSUE_EMOJI: Record<IssueType, string> = {
 
 export const STATUS_LABELS: Record<string, string> = {
   submitted: "Submitted",
-  under_review: "Under Review",
   approved: "Approved",
   denied: "Denied",
   resolved: "Resolved",
@@ -48,7 +47,6 @@ export const WATER_PROVIDER_LABELS: Record<WaterProvider, string> = {
 
 export const STATUS_DOTS: Record<string, string> = {
   submitted: "🟡",
-  under_review: "🔵",
   approved: "🟢",
   denied: "🔴",
   resolved: "🟢",
