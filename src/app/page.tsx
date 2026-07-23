@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { BARANGAYS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { cookies } from "next/headers";
 import { t } from "@/lib/i18n";
@@ -124,7 +125,7 @@ export default async function HomePage() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
             {[
               { label: t("Active Reports", lang), value: activeReports ?? 0, icon: ClipboardList },
-              { label: t("Barangays with Issues", lang), value: `${affectedBarangays.size}/40`, icon: MapIcon },
+              { label: t("Barangays with Issues", lang), value: `${affectedBarangays.size}/${BARANGAYS.length}`, icon: MapIcon },
               { label: t("Services", lang), value: businessCount ?? 0, icon: Building2 },
               { label: t("Emergency Contacts", lang), value: emergencyCount ?? 0, icon: Phone },
             ].map((stat) => (
