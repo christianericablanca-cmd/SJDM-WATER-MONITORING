@@ -16,13 +16,15 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
   const [contact, setContact] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
+  const [formError, setFormError] = useState("");
   const pathname = usePathname();
   const { lang } = useLanguage();
   const { success: toastSuccess, error: toastError } = useToast();
 
   const handleSubmit = async () => {
+    setFormError("");
     if (description.trim().length < 10) {
-      toastError(t("Too short", lang), t("Please describe the issue in more detail.", lang));
+      setFormError(t("Please describe the issue in more detail.", lang));
       return;
     }
     setLoading(true);
@@ -45,7 +47,7 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => { setSent(false); setDescription(""); setContact(""); }, 200);
+    setTimeout(() => { setSent(false); setDescription(""); setContact(""); setFormError(""); }, 200);
   };
 
   if (!open) return null;
@@ -99,6 +101,9 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
                 className="h-9 text-sm"
               />
             </div>
+            {formError && (
+              <p className="text-[11px] text-destructive font-medium">{formError}</p>
+            )}
             <Button onClick={handleSubmit} disabled={loading} className="w-full h-10 text-sm gap-2">
               {loading ? t("Sending…", lang) : <><Send className="h-3.5 w-3.5" /> {t("Submit Report", lang)}</>}
             </Button>
