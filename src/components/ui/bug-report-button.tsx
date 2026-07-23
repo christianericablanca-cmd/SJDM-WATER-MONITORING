@@ -34,7 +34,7 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
-      toastSuccess(t("Bug reported", lang), t("Thanks for helping improve WaterWatch.", lang));
+      toastSuccess(t("Problem reported", lang), t("Thanks for helping improve WaterWatch.", lang));
       setSent(true);
     } catch (err: unknown) {
       toastError("Failed", err instanceof Error ? err.message : "Something went wrong");
@@ -59,8 +59,8 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
               <Bug className="h-4 w-4 text-amber-600" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold">{t("Report a Bug", lang)}</h2>
-              <p className="text-[11px] text-muted-foreground">{t("Find a bug in the system? Report it, enter the details of the bug.", lang)}</p>
+              <h2 className="text-sm font-semibold">{t("Report a Problem", lang)}</h2>
+              <p className="text-[11px] text-muted-foreground">{t("Find a problem within the system? Report it. Enter the details below.", lang)}</p>
             </div>
           </div>
           <button onClick={handleClose} className="p-1.5 rounded-lg hover:bg-muted transition-colors">
@@ -73,14 +73,14 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center mx-auto">
               <CheckCircle2 className="h-6 w-6 text-emerald-500" />
             </div>
-            <p className="text-sm font-medium">{t("Bug Reported", lang)}</p>
+            <p className="text-sm font-medium">{t("Problem Reported", lang)}</p>
             <p className="text-xs text-muted-foreground">{t("Thanks for helping improve WaterWatch.", lang)}</p>
             <Button variant="outline" size="sm" onClick={handleClose} className="mt-2">{t("Close", lang)}</Button>
           </div>
         ) : (
           <div className="p-4 space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs">{t("Describe the bug", lang)} <span className="text-destructive">*</span></Label>
+              <Label className="text-xs">{t("Describe the problem", lang)} <span className="text-destructive">*</span></Label>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
@@ -120,7 +120,7 @@ export function BugReportButton() {
         className="fixed bottom-20 sm:bottom-5 right-5 z-[9990] hidden sm:flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-foreground text-background shadow-lg text-xs font-medium hover:scale-105 transition-transform min-h-[44px] safe-bottom"
       >
         <Bug className="h-3.5 w-3.5" />
-        {t("Report Bug", lang)}
+        {t("Report Problem", lang)}
       </button>
       <BugReportDialog open={open} onClose={() => setOpen(false)} />
     </>

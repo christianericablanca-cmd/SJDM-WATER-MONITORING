@@ -65,8 +65,8 @@ export function Header() {
             <button
               onClick={() => setShowBugReport(true)}
               className="sm:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors"
-              aria-label="Report a bug"
-              title="Report a bug"
+              aria-label="Report a problem"
+              title="Report a problem"
             >
               <Bug className="h-4 w-4" />
             </button>
