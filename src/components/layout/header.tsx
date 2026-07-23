@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Droplets, Sun, Moon, Languages, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -24,6 +25,9 @@ export function Header() {
   const { resolved, setTheme } = useTheme();
   const { lang, setLang } = useLanguage();
   const [showBugReport, setShowBugReport] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   if (pathname?.startsWith("/admin")) return null;
 
@@ -101,7 +105,10 @@ export function Header() {
           </div>
         </div>
       </div>
-      <BugReportDialog open={showBugReport} onClose={() => setShowBugReport(false)} />
+      {mounted && createPortal(
+        <BugReportDialog open={showBugReport} onClose={() => setShowBugReport(false)} />,
+        document.body
+      )}
     </header>
   );
 }
