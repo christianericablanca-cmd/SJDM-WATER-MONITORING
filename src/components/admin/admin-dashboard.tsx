@@ -572,6 +572,9 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               <div className="flex justify-between"><span>Resolved</span><span className="font-medium text-emerald-600">{resolvedCount}</span></div>
               <div className="flex justify-between"><span>Inactive</span><span className="font-medium text-muted-foreground">{staleCount}</span></div>
             </div>
+          <Button variant="ghost" size="sm" className="w-full text-xs h-8 gap-1.5" asChild>
+            <a href="/"><Droplets className="h-3 w-3" /> Back to WaterWatch</a>
+          </Button>
           <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full text-xs h-8 gap-1.5">
             <LogOut className="h-3 w-3" /> Sign Out
           </Button>
