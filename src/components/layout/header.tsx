@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Droplets, Sun, Moon, Languages } from "lucide-react";
+import { useState } from "react";
+import { Droplets, Sun, Moon, Languages, Bug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useTheme } from "@/components/ui/theme-provider";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
+import { BugReportDialog } from "@/components/ui/bug-report-button";
 
 const NAV_ITEMS = [
   { label: "Water Map", href: "/map" },
@@ -21,6 +23,7 @@ export function Header() {
   const pathname = usePathname();
   const { resolved, setTheme } = useTheme();
   const { lang, setLang } = useLanguage();
+  const [showBugReport, setShowBugReport] = useState(false);
 
   if (pathname?.startsWith("/admin")) return null;
 
@@ -60,6 +63,14 @@ export function Header() {
 
           <div className="flex items-center gap-1">
             <button
+              onClick={() => setShowBugReport(true)}
+              className="sm:hidden flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors"
+              aria-label="Report a bug"
+              title="Report a bug"
+            >
+              <Bug className="h-4 w-4" />
+            </button>
+            <button
               onClick={() => setLang(lang === "en" ? "tl" : "en")}
               className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors relative"
               aria-label="Toggle language"
@@ -90,6 +101,7 @@ export function Header() {
           </div>
         </div>
       </div>
+      <BugReportDialog open={showBugReport} onClose={() => setShowBugReport(false)} />
     </header>
   );
 }
