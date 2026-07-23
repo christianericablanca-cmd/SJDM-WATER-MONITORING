@@ -251,10 +251,7 @@ export function ReportForm() {
             {t("Save this ID to track your report status later.", lang)}
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <Button variant="outline" onClick={() => router.push("/report/" + submitted.split("-").pop())}>
-            {t("Track Status", lang)}
-          </Button>
+        <div className="flex justify-center">
           <Button variant="outline" onClick={() => router.push("/map")}>
             {t("View Reports", lang)}
           </Button>
