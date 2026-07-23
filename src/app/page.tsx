@@ -61,9 +61,7 @@ export default async function HomePage() {
   const { count: activeReports } = await supabase
     .from("reports")
     .select("*", { count: "exact", head: true })
-    .neq("status", "resolved")
-    .neq("status", "denied")
-    .neq("status", "stale");
+    .eq("status", "approved");
 
   const { count: businessCount } = await supabase
     .from("businesses")
@@ -76,8 +74,7 @@ export default async function HomePage() {
   const { data: recentReports } = await supabase
     .from("reports")
     .select("barangay")
-    .neq("status", "resolved")
-    .neq("status", "denied")
+    .eq("status", "approved")
     .order("created_at", { ascending: false })
     .limit(200);
 
