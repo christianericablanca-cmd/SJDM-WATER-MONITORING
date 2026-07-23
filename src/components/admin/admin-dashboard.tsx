@@ -471,7 +471,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   };
 
   // Dashboard computations
-  const activeReports = reports.filter((r) => r.status !== "resolved" && r.status !== "denied" && r.status !== "stale");
+  const activeReports = reports.filter((r) => r.status === "approved");
   const resolvedPct = totalReports > 0 ? Math.round((resolvedCount / totalReports) * 100) : 0;
   const now = new Date();
   const phNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
