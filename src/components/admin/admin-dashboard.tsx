@@ -794,12 +794,18 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   </div>
                   <p className="text-xs truncate font-medium">{latestPending.barangay} · {ISSUE_TYPES.find((t) => t.value === latestPending.issue_type)?.emoji} {latestPending.report_id_display}</p>
                   <p className="text-[10px] text-muted-foreground mb-2">{new Date(latestPending.created_at).toLocaleDateString()}</p>
-                  <Button size="sm" className="h-7 text-[10px] gap-1 w-full"
-                    onClick={(e) => { e.stopPropagation(); handleApprove(latestPending.id); }}
-                    disabled={updating === latestPending.id}>
-                    {updating === latestPending.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
-                    Approve
-                  </Button>
+                  <div className="flex gap-1.5">
+                    <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 flex-1"
+                      onClick={() => setViewReport(latestPending)}>
+                      <Eye className="h-3 w-3" /> View Details
+                    </Button>
+                    <Button size="sm" className="h-7 text-[10px] gap-1 flex-1"
+                      onClick={(e) => { e.stopPropagation(); handleApprove(latestPending.id); }}
+                      disabled={updating === latestPending.id}>
+                      {updating === latestPending.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                      Approve
+                    </Button>
+                  </div>
                 </div>
               )}
             </div>
