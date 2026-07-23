@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS reports (
   issue_type TEXT NOT NULL CHECK (issue_type IN ('no_water','low_pressure','dirty_water','water_leak','pipe_infrastructure','other')),
   description TEXT,
   photo_url TEXT,
-  status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted','under_review','community_confirmed','resolved','stale')),
+  status TEXT NOT NULL DEFAULT 'submitted' CHECK (status IN ('submitted','under_review','approved','denied','resolved','stale')),
   started_at TIMESTAMPTZ NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   resolved_at TIMESTAMPTZ,

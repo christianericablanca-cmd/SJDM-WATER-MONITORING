@@ -1,20 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BARANGAYS, BARANGAY_COORDS, BUSINESS_CATEGORIES, SJDM_CENTER } from "@/lib/constants";
+import { BARANGAYS, BARANGAY_COORDS, BUSINESS_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast-provider";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
-import { Loader2, Building2, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, MapPin, Upload } from "lucide-react";
+import { Loader2, Building2, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const STEPS = ["Business Info", "Contact & Services", "Review"];
+const STEPS = ["Service Info", "Contact & Services", "Review"];
 
 interface FieldErrors {
   name?: string;
@@ -56,22 +56,6 @@ export function BusinessClaimForm() {
   }, []);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [showMap, setShowMap] = useState(false);
-  const [mapCenter, setMapCenter] = useState<{ lat: number; lng: number }>({ lat: SJDM_CENTER.lat, lng: SJDM_CENTER.lng });
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
-  useEffect(() => {
-    if (!barangay) return;
-    const coords = BARANGAY_COORDS[barangay as keyof typeof BARANGAY_COORDS];
-    if (coords) {
-      setMapCenter(coords);
-      setLat(coords.lat);
-      setLng(coords.lng);
-    }
-  }, [barangay]);
 
   const validate = (): FieldErrors => {
     const e: FieldErrors = {};
@@ -104,30 +88,6 @@ export function BusinessClaimForm() {
       setErrors({});
       setStep(2);
     }
-  };
-
-  const handleLocationPick = () => {
-    if (!navigator.geolocation) {
-      setMapCenter({ lat: SJDM_CENTER.lat, lng: SJDM_CENTER.lng });
-      setShowMap(!showMap);
-      return;
-    }
-    setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        setLat(pos.coords.latitude);
-        setLng(pos.coords.longitude);
-        setMapCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-        setLocating(false);
-        setShowMap(!showMap);
-      },
-      () => {
-        setLocating(false);
-        setMapCenter({ lat: SJDM_CENTER.lat, lng: SJDM_CENTER.lng });
-        setShowMap(!showMap);
-      },
-      { timeout: 10000 },
-    );
   };
 
   const compressImage = (file: File, maxSize = 1024, quality = 0.7): Promise<Blob> => {
@@ -212,8 +172,8 @@ export function BusinessClaimForm() {
 
       toastSuccess(t("Listing submitted!", lang), t("Your business is now pending review by an admin. We'll notify you once it's approved.", lang));
       setSubmitted(true);
-    } catch (err: any) {
-      toastError(t("Submission failed", lang), err.message || t("Please check your connection and try again.", lang));
+    } catch (err: unknown) {
+      toastError(t("Submission failed", lang), err instanceof Error ? err.message : t("Please check your connection and try again.", lang));
       setLoading(false);
     }
   };
@@ -235,7 +195,7 @@ export function BusinessClaimForm() {
             <p className="font-medium text-foreground mb-1">{t("What happens next?", lang)}</p>
             <ol className="text-left space-y-1 list-decimal list-inside text-sm">
               <li>{t("An admin reviews your submission", lang)}</li>
-              <li>{t("If approved, it appears in the Assistance Directory", lang)}</li>
+              <li>{t("If approved, it appears in the Services Directory", lang)}</li>
               <li>{t("You can contact us to update your listing anytime", lang)}</li>
             </ol>
           </div>
@@ -272,11 +232,11 @@ export function BusinessClaimForm() {
             </div>
             <div>
               <CardTitle className="text-lg">
-                {step === 0 ? t("Tell us about your business", lang) : t("Contact & services", lang)}
+                {step === 0 ? t("Tell us about your service", lang) : t("Contact & services", lang)}
               </CardTitle>
               <CardDescription>
                 {step === 0
-                  ? t("Basic information about your business. Fields marked * are required.", lang)
+                  ? t("Basic information about your service. Fields marked * are required.", lang)
                   : t("How can the community reach you? What services do you offer?", lang)}
               </CardDescription>
             </div>
@@ -329,64 +289,19 @@ export function BusinessClaimForm() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("Map Location", lang)} <span className="text-muted-foreground text-xs">{t("(optional)", lang)}</span></Label>
-                {showMap && mounted ? (
-                  <div className="rounded-xl border overflow-hidden">
-                    <div className="h-[280px] sm:h-[340px] relative bg-muted">
-                      <MapLocationPicker
-                        center={lat && lng ? { lat, lng } : mapCenter}
-                        onPin={(newLat, newLng) => {
-                          setLat(newLat);
-                          setLng(newLng);
-                        }}
-                      />
-                    </div>
-                    <div className="flex items-center justify-between gap-2 p-2.5 bg-muted/30 border-t">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground truncate">
-                          {lat && lng
-                            ? t("Pin: {lat}, {lng}", lang).replace("{lat}", lat.toFixed(4)).replace("{lng}", lng.toFixed(4))
-                            : t("Drag the marker to pin your location", lang)}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (!navigator.geolocation) return;
-                            navigator.geolocation.getCurrentPosition(
-                              (pos) => {
-                                setLat(pos.coords.latitude);
-                                setLng(pos.coords.longitude);
-                                setMapCenter({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                              },
-                              () => {},
-                              { timeout: 8000 },
-                            );
-                          }}
-                          className="text-[10px] text-water hover:underline shrink-0"
-                        >
-                          {t("Use my location", lang)}
-                        </button>
-                      </div>
-                      <Button size="sm" variant="ghost" onClick={() => setShowMap(false)} className="h-7 text-xs">
-                        {lat && lng ? t("Done", lang) : t("Cancel", lang)}
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <Button type="button" variant="outline" onClick={handleLocationPick} disabled={locating}
-                    className={cn("w-full h-10 justify-start gap-2", lat && lng ? "border-emerald-500/50 text-emerald-600" : "")}>
-                    <MapPin className={cn("h-4 w-4", locating && "animate-pulse")} />
-                    {locating ? t("Getting location…", lang) :
-                      lat && lng ? t("📍 Pin set ({lat}, {lng})", lang).replace("{lat}", lat.toFixed(4)).replace("{lng}", lng.toFixed(4)) : t("📍 Set location for map pin", lang)}
-                  </Button>
-                )}
+                <div className="rounded-xl border overflow-hidden h-[280px] sm:h-[340px]">
+                  <LocationPicker
+                    barangay={barangay}
+                    lat={lat}
+                    lng={lng}
+                    onPin={(newLat, newLng) => {
+                      setLat(newLat);
+                      setLng(newLng);
+                    }}
+                  />
+                </div>
                 <p className="text-[11px] text-muted-foreground">
-                  {showMap ? (
-                    <span className="text-orange-600 dark:text-orange-400 font-medium">
-                      {t("Drag the blue marker to your business location, or tap \"Use my location\" if you are at your store right now.", lang)}
-                    </span>
-                  ) : (
-                    t("Pin your business location so customers can find you on the map.", lang)
-                  )}
+                  {t("Drag the marker to your business location. The pin is constrained within the selected barangay.", lang)}
                 </p>
               </div>
             </div>
@@ -517,84 +432,6 @@ export function BusinessClaimForm() {
   );
 }
 
-const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
-const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
-const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ssr: false });
+const LocationPicker = dynamic(() => import("@/components/reports/location-picker").then((m) => m.LocationPicker), { ssr: false });
 
-function MapLocationPicker({
-  center,
-  onPin,
-}: {
-  center: { lat: number; lng: number };
-  onPin: (lat: number, lng: number) => void;
-}) {
-  const [pos, setPos] = useState(center);
-  const markerRef = useRef<any>(null);
-  const mapRef = useRef<any>(null);
 
-  useEffect(() => {
-    setPos(center);
-    if (mapRef.current) {
-      mapRef.current.setView([center.lat, center.lng], 14, { animate: true });
-    }
-  }, [center.lat, center.lng]);
-
-  useEffect(() => {
-    return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-      }
-    };
-  }, []);
-
-  const icon = useMemo(() => {
-    if (typeof window === "undefined") return null;
-    const L = require("leaflet");
-    return new L.DivIcon({
-      className: "custom-marker",
-      html: `<div style="width:20px;height:20px;border-radius:50%;background:#1d7abf;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
-  }, []);
-
-  const eventHandlers = useMemo(
-    () => ({
-      dragend() {
-        const marker = markerRef.current;
-        if (marker) {
-          const ll = marker.getLatLng();
-          setPos({ lat: ll.lat, lng: ll.lng });
-          onPin(ll.lat, ll.lng);
-        }
-      },
-    }),
-    [onPin],
-  );
-
-  return (
-    <MapContainer
-      ref={mapRef}
-      center={[center.lat, center.lng]}
-      zoom={14}
-      className="h-full w-full"
-      scrollWheelZoom={true}
-      zoomControl={true}
-    >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
-      {icon && (
-        <Marker
-          draggable
-          ref={markerRef}
-          position={[pos.lat, pos.lng]}
-          icon={icon}
-          eventHandlers={eventHandlers}
-        />
-      )}
-    </MapContainer>
-  );
-}

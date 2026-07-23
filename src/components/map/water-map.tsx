@@ -2,19 +2,21 @@
 
 import { useEffect, useMemo, useState, useRef, memo } from "react";
 import dynamic from "next/dynamic";
-import type { WaterReport, Business, WaterProvider } from "@/lib/types";
+import type { WaterReport, Business, WaterProvider, Barangay, IssueType, ReportStatus } from "@/lib/types";
 import { SJDM_CENTER, ISSUE_EMOJI, ISSUE_TYPES, WATER_PROVIDERS, WATER_PROVIDER_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, MapPin, ChevronDown, ChevronUp, Filter, Store, Phone, Truck, Clock, Layers, RefreshCw } from "lucide-react";
-import { timeSince } from "@/lib/utils";
+import { cn, timeSince } from "@/lib/utils";
 import { BARANGAYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
 import { BarangayBoundaries } from "./barangay-boundaries";
+import { RainIndicator } from "./rain-indicator";
 import { useMap } from "react-leaflet";
 import { createClient } from "@/lib/supabase/client";
+import L from "leaflet";
 
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
@@ -35,9 +37,8 @@ interface WaterMapProps {
   businesses: Business[];
 }
 
-function createReportIcon(color: string) {
+function createReportIcon(color: string): L.DivIcon | null {
   if (typeof window === "undefined") return null;
-  const L = require("leaflet");
   return new L.DivIcon({
     className: "custom-marker",
     html: `<div style="width:12px;height:12px;border-radius:50%;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25)"></div>`,
@@ -47,9 +48,8 @@ function createReportIcon(color: string) {
   });
 }
 
-function createBusinessIcon() {
+function createBusinessIcon(): L.DivIcon | null {
   if (typeof window === "undefined") return null;
-  const L = require("leaflet");
   return new L.DivIcon({
     className: "custom-marker",
     html: `<div style="width:22px;height:22px;border-radius:4px;background:#059669;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:bold;">🏪</div>`,
@@ -71,22 +71,23 @@ const BoundaryLayer = memo(function BoundaryLayer({ visible, lang }: { visible: 
   return <BarangayBoundaries map={map} visible={visible} lang={lang} />;
 });
 
-const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, filteredReports, showBusinesses, showBoundaries, businessesWithCoords, damData, lang }: {
+const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, filteredReports, showBusinesses, showBoundaries, businessesWithCoords, damData, lang, onPhotoClick, onBusinessPhotoClick }: {
   reports: WaterReport[];
   businesses: Business[];
-  reportIconCache: Record<string, any>;
+  reportIconCache: Record<string, L.DivIcon | null>;
   filteredReports: WaterReport[];
   showBusinesses: boolean;
   showBoundaries: boolean;
   businessesWithCoords: Business[];
   damData: { level: number; normalHigh: number; date: string } | null;
   lang: "en" | "tl";
+  onPhotoClick: (report: WaterReport) => void;
+  onBusinessPhotoClick: (business: Business) => void;
 }) {
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
   const bizIcon = useMemo(() => createBusinessIcon(), []);
   const damIcon = useMemo(() => {
     if (typeof window === "undefined") return null;
-    const L = require("leaflet");
     return new L.DivIcon({
       className: "custom-marker",
       html: `<div style="width:24px;height:24px;border-radius:50% 50% 50% 0;background:#2563eb;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3);transform:rotate(-45deg);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:15px">💧</span></div>`,
@@ -95,15 +96,16 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
       popupAnchor: [0, -28],
     });
   }, []);
-  const [key] = useState(() => `map-${Math.random().toString(36).slice(2)}`);
+  const [key] = useState(() => `map-${crypto.randomUUID()}`);
 
   useEffect(() => {
-    if (mapRef.current) {
-      setTimeout(() => { mapRef.current.invalidateSize(); }, 200);
+    const map = mapRef.current;
+    if (map) {
+      setTimeout(() => { map.invalidateSize(); }, 200);
     }
     return () => {
-      if (mapRef.current) {
-        mapRef.current.remove();
+      if (map) {
+        map.remove();
       }
     };
   }, []);
@@ -156,7 +158,6 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
                     report.status === "resolved" || report.status === "approved" || (report.status === "under_review" && report.verified) ? "success" :
                     report.status === "denied" ? "destructive" :
                     report.status === "stale" ? "secondary" :
-                    report.status === "community_confirmed" ? "warning" :
                     report.status === "submitted" ? "outline" : "default"
                   } className="text-[10px] sm:text-xs px-1.5 py-0">
                     {(report.status === "under_review" && report.verified) ? STATUS_LABELS.approved : STATUS_LABELS[report.status] || report.status.replace("_", " ")}
@@ -171,19 +172,14 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
                   </div>
                 )}
                 {report.photo_url && (
-                  <div className="relative w-full h-28 sm:h-32 rounded-md overflow-hidden bg-muted -mx-0.5">
+                  <button onClick={() => onPhotoClick(report)} className="relative w-full h-28 sm:h-32 rounded-md overflow-hidden bg-muted -mx-0.5 p-0 border-0 block cursor-pointer text-left">
                     <img src={report.photo_url} alt="Report photo" className="w-full h-full object-cover"
                       loading="lazy" />
-                  </div>
+                  </button>
                 )}
                 {report.description && (
                   <div className="text-[10px] sm:text-xs text-muted-foreground line-clamp-3 leading-relaxed">
                     {report.description}
-                  </div>
-                )}
-                {report.confirmation_count !== undefined && report.confirmation_count > 0 && (
-                  <div className="text-[10px] sm:text-xs text-muted-foreground">
-                    ✓ {report.confirmation_count} confirmation{report.confirmation_count !== 1 ? "s" : ""}
                   </div>
                 )}
                 <div className="text-[10px] sm:text-[11px] text-muted-foreground">
@@ -199,9 +195,9 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
           <Popup>
             <div className="space-y-1.5 min-w-[190px] max-w-[250px]">
               {biz.photo_url && (
-                <div className="w-full h-24 rounded-md overflow-hidden -mx-0.5">
+                <button onClick={() => onBusinessPhotoClick(biz)} className="w-full h-24 rounded-md overflow-hidden -mx-0.5 p-0 border-0 block cursor-pointer">
                   <img src={biz.photo_url} alt={biz.name} className="w-full h-full object-cover" loading="lazy" />
-                </div>
+                </button>
               )}
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-sm">{biz.name}</span>
@@ -240,21 +236,26 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
 export function WaterMap({ reports, businesses }: WaterMapProps) {
   const { lang } = useLanguage();
   const [liveReports, setLiveReports] = useState<WaterReport[]>(reports);
+  const [liveBusinesses, setLiveBusinesses] = useState<Business[]>(businesses);
   const [search, setSearch] = useState("");
   const [barangayFilter, setBarangayFilter] = useState<string>("all");
   const [issueFilter, setIssueFilter] = useState<string>("all");
   const [providerFilter, setProviderFilter] = useState<string>("all");
-  const [showFilters, setShowFilters] = useState(typeof window !== "undefined" && window.innerWidth >= 640);
+  const [showFilters, setShowFilters] = useState(false);
+  useEffect(() => { if (window.innerWidth >= 640) setShowFilters(true); }, []); // eslint-disable-line react-hooks/set-state-in-effect
   const [showBusinesses, setShowBusinesses] = useState(true);
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [mounted, setMounted] = useState(false);
   const [damData, setDamData] = useState<{ level: number; normalHigh: number; date: string } | null>(null);
+  const [previewReport, setPreviewReport] = useState<WaterReport | null>(null);
+  const [previewBusiness, setPreviewBusiness] = useState<Business | null>(null);
   const [liveCount, setLiveCount] = useState(0);
   const [rtConnected, setRtConnected] = useState(false);
   const knownIdsRef = useRef<Set<string>>(new Set());
+  const knownBizIdsRef = useRef<Set<string>>(new Set());
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => { setMounted(true); }, []); // eslint-disable-line react-hooks/set-state-in-effect
 
   useEffect(() => {
     const supabase = createClient();
@@ -264,25 +265,25 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "reports" },
         (payload) => {
-          const r = payload.new as any;
+          const r = payload.new as Record<string, unknown>;
           const report: WaterReport = {
             id: String(r.id),
-            barangay: r.barangay,
-            latitude: r.latitude,
-            longitude: r.longitude,
-            issue_type: r.issue_type,
-            description: r.description,
-            photo_url: r.photo_url,
-            street_sitio: r.street_sitio,
-            status: r.status,
-            report_id_display: r.report_id_display,
-            started_at: r.started_at,
-            created_at: r.created_at,
-            resolved_at: r.resolved_at,
-            confirmation_count: r.confirmation_count || 0,
-            water_provider: r.water_provider,
-            verified: r.verified,
-            denied: r.denied,
+            barangay: r.barangay as Barangay,
+            latitude: r.latitude as number,
+            longitude: r.longitude as number,
+            issue_type: r.issue_type as IssueType,
+            description: r.description as string,
+            photo_url: r.photo_url as string | null,
+            street_sitio: r.street_sitio as string | null,
+            status: r.status as ReportStatus,
+            report_id_display: r.report_id_display as string,
+            started_at: r.started_at as string,
+            created_at: r.created_at as string,
+            resolved_at: r.resolved_at as string | null,
+            confirmation_count: (r.confirmation_count as number) || 0,
+            water_provider: r.water_provider as WaterProvider,
+            verified: r.verified as boolean,
+            denied: r.denied as boolean,
           };
           setLiveReports((prev) => {
             if (prev.some((p) => p.id === report.id)) return prev;
@@ -295,28 +296,28 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         "postgres_changes",
         { event: "UPDATE", schema: "public", table: "reports" },
         (payload) => {
-          const r = payload.new as any;
+          const r = payload.new as Record<string, unknown>;
           setLiveReports((prev) =>
             prev.map((p) =>
               p.id === String(r.id)
                 ? {
                     ...p,
-                    barangay: r.barangay ?? p.barangay,
-                    latitude: r.latitude ?? p.latitude,
-                    longitude: r.longitude ?? p.longitude,
-                    issue_type: r.issue_type ?? p.issue_type,
-                    description: r.description ?? p.description,
-                    photo_url: r.photo_url ?? p.photo_url,
-                    street_sitio: r.street_sitio ?? p.street_sitio,
-                    status: r.status ?? p.status,
-                    report_id_display: r.report_id_display ?? p.report_id_display,
-                    started_at: r.started_at ?? p.started_at,
-                    created_at: r.created_at ?? p.created_at,
-                    resolved_at: r.resolved_at ?? p.resolved_at,
-                    confirmation_count: r.confirmation_count ?? p.confirmation_count,
-                    water_provider: r.water_provider ?? p.water_provider,
-                    verified: r.verified ?? p.verified,
-                    denied: r.denied ?? p.denied,
+                    barangay: (r.barangay as Barangay) ?? p.barangay,
+                    latitude: (r.latitude as number) ?? p.latitude,
+                    longitude: (r.longitude as number) ?? p.longitude,
+                    issue_type: (r.issue_type as IssueType) ?? p.issue_type,
+                    description: (r.description as string | null | undefined) ?? p.description,
+                    photo_url: (r.photo_url as string | null | undefined) ?? p.photo_url,
+                    street_sitio: (r.street_sitio as string | null | undefined) ?? p.street_sitio,
+                    status: (r.status as ReportStatus) ?? p.status,
+                    report_id_display: (r.report_id_display as string | null | undefined) ?? p.report_id_display,
+                    started_at: (r.started_at as string | null | undefined) ?? p.started_at,
+                    created_at: (r.created_at as string) ?? p.created_at,
+                    resolved_at: (r.resolved_at as string | null | undefined) ?? p.resolved_at,
+                    confirmation_count: (r.confirmation_count as number | undefined) ?? p.confirmation_count,
+                    water_provider: (r.water_provider as WaterProvider | null | undefined) ?? p.water_provider,
+                    verified: (r.verified as boolean | undefined) ?? p.verified,
+                    denied: (r.denied as boolean | undefined) ?? p.denied,
                   }
                 : p,
             )
@@ -327,14 +328,52 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         if (status === "SUBSCRIBED") setRtConnected(true);
       });
 
+    const bizChannel = supabase
+      .channel("businesses-realtime")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "businesses" },
+        (payload) => {
+          const b = payload.new as Record<string, unknown>;
+          setLiveBusinesses((prev) => {
+            if (prev.some((p) => p.id === b.id)) return prev;
+            return [...prev, b as unknown as Business];
+          });
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "businesses" },
+        (payload) => {
+          const b = payload.new as Record<string, unknown>;
+          setLiveBusinesses((prev) =>
+            prev.map((p) => (p.id === b.id ? (b as unknown as Business) : p)),
+          );
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "businesses" },
+        (payload) => {
+          const b = payload.old as Record<string, unknown>;
+          setLiveBusinesses((prev) => prev.filter((p) => p.id !== b.id));
+        },
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(bizChannel);
     };
   }, []);
 
   useEffect(() => {
     knownIdsRef.current = new Set(liveReports.map((r) => r.id));
   }, [reports]);
+
+  useEffect(() => {
+    knownBizIdsRef.current = new Set(liveBusinesses.map((b) => b.id));
+  }, [businesses]);
 
   useEffect(() => {
     if (liveCount > 0) {
@@ -350,9 +389,8 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         const { data } = await supabase
           .from("reports")
           .select("*")
-          .eq("verified", true)
-          .order("created_at", { ascending: false })
-          .limit(50);
+          .eq("status", "approved")
+          .order("created_at", { ascending: false });
         if (!data) return;
         const prevIds = knownIdsRef.current;
         const newIds = new Set<string>();
@@ -401,7 +439,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
                       started_at: r.started_at,
                       created_at: r.created_at,
                       resolved_at: r.resolved_at,
-                      confirmation_count: r.confirmation_count || 0,
+            confirmation_count: (r.confirmation_count as number) || 0,
                       water_provider: r.water_provider,
                       verified: r.verified,
                       denied: r.denied,
@@ -412,13 +450,42 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
             updated++;
           }
         }
+        knownIdsRef.current = newIds;
+        const totalChanges = added + updated;
+        if (totalChanges > 0) setLiveCount((c) => c + totalChanges);
+      } catch {
+      }
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("businesses")
+          .select("*")
+          .order("name");
+        if (!data) return;
+        const prevIds = knownBizIdsRef.current;
+        const newIds = new Set<string>();
+        for (const b of data) {
+          const id = String(b.id);
+          newIds.add(id);
+          if (!prevIds.has(id)) {
+            setLiveBusinesses((prev) => (prev.some((p) => p.id === id) ? prev : [...prev, b as Business]));
+          } else {
+            setLiveBusinesses((prev) =>
+              prev.map((p) => (p.id === id ? (b as Business) : p)),
+            );
+          }
+        }
         const removed = [...prevIds].filter((id) => !newIds.has(id));
         if (removed.length > 0) {
-          setLiveReports((prev) => prev.filter((p) => !removed.includes(p.id)));
+          setLiveBusinesses((prev) => prev.filter((p) => !removed.includes(p.id)));
         }
-        knownIdsRef.current = newIds;
-        const totalChanges = added + updated + removed.length;
-        if (totalChanges > 0) setLiveCount((c) => c + totalChanges);
+        knownBizIdsRef.current = newIds;
       } catch {
       }
     }, 15000);
@@ -428,16 +495,17 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   useEffect(() => {
     fetch("/api/dam-levels")
       .then((r) => r.json())
-      .then((d) => {
-        const angat = (d.dams || []).find((dam: any) => dam.name === "Angat");
-        if (angat) setDamData(angat);
+      .then((d: Record<string, unknown>) => {
+        const dams = d.dams as Array<Record<string, unknown>> | undefined;
+        const angat = (dams || []).find((dam) => dam.name === "Angat");
+        if (angat) setDamData(angat as { level: number; normalHigh: number; date: string });
       })
       .catch(() => {});
   }, []);
 
   useEffect(() => {
     if (!mounted || !wrapperRef.current) return;
-    const el = wrapperRef.current.querySelector(".leaflet-container") as any;
+    const el = wrapperRef.current.querySelector<HTMLElement & { _leaflet_id?: number; _leaflet_map?: L.Map }>(".leaflet-container");
     if (el && el._leaflet_id) {
       setTimeout(() => { el._leaflet_map?.invalidateSize(); }, 100);
     }
@@ -454,11 +522,11 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   }, [liveReports, barangayFilter, issueFilter, providerFilter, search]);
 
   const businessesWithCoords = useMemo(() => {
-    return businesses.filter((b) => b.latitude != null && b.longitude != null);
-  }, [businesses]);
+    return liveBusinesses.filter((b) => b.latitude != null && b.longitude != null);
+  }, [liveBusinesses]);
 
   const reportIconCache = useMemo(() => {
-    const cache: Record<string, any> = {};
+    const cache: Record<string, L.DivIcon | null> = {};
     if (typeof window === "undefined") return cache;
     for (const [key, color] of Object.entries(MARKER_COLORS)) {
       cache[key] = createReportIcon(color);
@@ -483,6 +551,10 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
           <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
             <RefreshCw className="h-2.5 w-2.5" />
             live
+          </span>
+          <span className="flex items-center gap-1 text-[9px] sm:text-[10px] text-muted-foreground">
+            <Store className="h-2.5 w-2.5" />
+            {businessesWithCoords.length}
           </span>
           <span className="text-muted-foreground text-[10px] sm:text-xs truncate">
             · {new Set(filteredReports.map((r) => r.barangay)).size} {t("barangays", lang)}
@@ -591,6 +663,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
       {/* Map */}
       <div className="h-[55vh] min-h-[350px] sm:h-[600px] xl:h-[700px] rounded-xl border overflow-hidden shadow-card relative bg-muted isolate">
         {mounted ? (
+          <>
           <MapInner
             reports={reports}
             businesses={businesses}
@@ -601,17 +674,95 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
             businessesWithCoords={businessesWithCoords}
             damData={damData}
             lang={lang}
+            onPhotoClick={setPreviewReport}
+            onBusinessPhotoClick={setPreviewBusiness}
           />
+          <RainIndicator />
+          </>
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
             {t("Loading map…", lang)}
           </div>
         )}
       </div>
+
+      {/* Business photo preview modal */}
+      {previewBusiness && previewBusiness.photo_url && (
+        <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4" onClick={() => setPreviewBusiness(null)}>
+          <div className="bg-background rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="relative w-full aspect-video bg-muted">
+              <img src={previewBusiness.photo_url} alt={previewBusiness.name} className="w-full h-full object-contain" />
+              <button onClick={() => setPreviewBusiness(null)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center text-sm hover:bg-black/70">✕</button>
+            </div>
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-sm">{previewBusiness.name}</span>
+                {previewBusiness.verified && (
+                  <Badge variant="success" className="text-[10px] px-1.5 py-0">Verified</Badge>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{CATEGORY_LABELS[previewBusiness.category] || previewBusiness.category}</p>
+              <p className="text-xs text-muted-foreground">{previewBusiness.address}, {previewBusiness.barangay}</p>
+              {previewBusiness.contact && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <span>{previewBusiness.contact}</span>
+                </div>
+              )}
+              {previewBusiness.operating_hours && (
+                <div className="flex items-center gap-1.5 text-xs">
+                  <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
+                  <span>{previewBusiness.operating_hours}</span>
+                </div>
+              )}
+              {previewBusiness.delivery_available && (
+                <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                  <Truck className="h-3 w-3 shrink-0" />
+                  <span>Delivery available</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report photo preview modal */}
+      {previewReport && previewReport.photo_url && (
+        <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4" onClick={() => setPreviewReport(null)}>
+          <div className="bg-background rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="relative w-full aspect-video bg-muted">
+              <img src={previewReport.photo_url} alt="Report" className="w-full h-full object-contain" />
+              <button onClick={() => setPreviewReport(null)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center text-sm hover:bg-black/70">✕</button>
+            </div>
+            <div className="p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{ISSUE_EMOJI[previewReport.issue_type]}</span>
+                  <span className="font-semibold text-sm">{previewReport.barangay}</span>
+                </div>
+                <Badge variant={
+                  previewReport.status === "resolved" || previewReport.status === "approved" || (previewReport.status === "under_review" && previewReport.verified) ? "success" :
+                  previewReport.status === "denied" ? "destructive" :
+                  previewReport.status === "stale" ? "secondary" : "outline"
+                } className="text-[10px] px-1.5 py-0">
+                  {(previewReport.status === "under_review" && previewReport.verified) ? STATUS_LABELS.approved : STATUS_LABELS[previewReport.status] || previewReport.status.replace("_", " ")}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">{t(ISSUE_TYPES.find(i => i.value === previewReport.issue_type)?.label || previewReport.issue_type, lang)}</p>
+              {previewReport.water_provider && (
+                <p className="text-xs text-muted-foreground/75">{WATER_PROVIDER_LABELS[previewReport.water_provider] || previewReport.water_provider}</p>
+              )}
+              {previewReport.description && (
+                <p className="text-sm leading-relaxed">{previewReport.description}</p>
+              )}
+              <div className="text-[10px] text-muted-foreground pt-1">
+                <span>{timeSince(previewReport.created_at)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}

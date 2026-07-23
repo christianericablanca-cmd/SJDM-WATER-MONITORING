@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 export function AutoResolveTrigger() {
   useEffect(() => {
-    fetch("/api/maintenance/auto-resolve").catch(() => {});
+    fetch("/api/maintenance/auto-resolve", { method: "POST" }).catch(() => {});
   }, []);
 
   return null;

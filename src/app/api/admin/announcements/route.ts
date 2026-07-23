@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { sanitizeString, sanitizeHtml } from "@/lib/sanitize";
 
 async function checkAdmin() {
   const supabase = await createServerSupabase();
@@ -22,7 +23,9 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  if (!body.title || !body.content) {
+  const title = sanitizeString(body.title, 200);
+  const content = sanitizeHtml(body.content, 5000);
+  if (!title || !content) {
     return NextResponse.json({ error: "Title and content are required" }, { status: 400 });
   }
 
@@ -30,9 +33,9 @@ export async function POST(request: Request) {
   const { data, error } = await svc
     .from("announcements")
     .insert({
-      title: body.title,
-      content: body.content,
-      source: body.source || "WaterWatch SJDM",
+      title,
+      content,
+      source: sanitizeString(body.source, 100) || "WaterWatch SJDM",
       is_official: body.is_official ?? true,
       created_by: user.id,
     })
@@ -40,7 +43,7 @@ export async function POST(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
   return NextResponse.json(data, { status: 201 });
 }
@@ -58,9 +61,9 @@ export async function PUT(request: Request) {
 
   const svc = createServiceClient();
   const updates: Record<string, unknown> = {};
-  if (body.title !== undefined) updates.title = body.title;
-  if (body.content !== undefined) updates.content = body.content;
-  if (body.source !== undefined) updates.source = body.source;
+  if (body.title !== undefined) updates.title = sanitizeString(body.title, 200);
+  if (body.content !== undefined) updates.content = sanitizeHtml(body.content, 5000);
+  if (body.source !== undefined) updates.source = sanitizeString(body.source, 100);
   if (body.is_official !== undefined) updates.is_official = body.is_official;
 
   const { data, error } = await svc
@@ -71,7 +74,7 @@ export async function PUT(request: Request) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
   return NextResponse.json(data);
 }
@@ -94,7 +97,7 @@ export async function DELETE(request: Request) {
     .eq("id", body.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
   return NextResponse.json({ success: true });
 }

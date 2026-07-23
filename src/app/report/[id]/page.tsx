@@ -4,7 +4,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { STATUS_DOTS, STATUS_LABELS, ISSUE_TYPES, ISSUE_EMOJI } from "@/lib/constants";
-import { formatDate, getConfidenceLevel } from "@/lib/utils";
+import { cn, formatDate, getConfidenceLevel } from "@/lib/utils";
 import { notFound } from "next/navigation";
 import { AutoResolveTrigger } from "@/components/map/auto-resolve-trigger";
 import { ReactivateById } from "@/components/reports/reactivate-by-id";
@@ -22,7 +22,13 @@ export default async function TrackReportPage({
   const lang = (cookieStore.get("lang")?.value || "en") as "en" | "tl";
 
   const { id } = await params;
-  const reportId = `SJDM-WATER-${id.padStart(5, "0")}`;
+  let reportId = id.toUpperCase();
+  if (/^\d+$/.test(id)) {
+    reportId = `SJDM-WATER-${id.padStart(5, "0")}`;
+  } else if (/^(?:SJDM-)?[A-Z0-9]+-[A-Z0-9]{5}$/i.test(id)) {
+    const stripped = id.replace(/^SJDM-/i, "");
+    reportId = `SJDM-${stripped.toUpperCase()}`;
+  }
 
   const supabase = await createServerSupabase();
   const { data: report } = await supabase
@@ -157,10 +163,13 @@ export default async function TrackReportPage({
           <MarkResolved reportId={report.report_id_display} />
         )}
 
-        {!report.denied && report.status !== "resolved" && report.status !== "stale" && (
-          <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-200 flex items-start gap-2.5">
-            <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-            <span dangerouslySetInnerHTML={{ __html: t(`Reports go <strong>inactive</strong> after <strong>7 days</strong> with no confirmations. If this issue is still ongoing, tap "I have this too" below, submit a new report at the same location, or use your Report ID to `, lang) }} /><ReactivateById />.
+        {(report.status === "stale" || report.status === "resolved") && !report.denied && (
+          <div className="space-y-3">
+            <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-200 flex items-start gap-2.5">
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+              <span>{t(`Reports go inactive after 7 days of no confirmations. To reactivate, submit a new report at the same location — we will automatically match and reactivate the original report. You can also reactivate from the Track Report page using your Report ID.`, lang)}</span>
+            </div>
+            <ReactivateById />
           </div>
         )}
 
@@ -170,6 +179,3 @@ export default async function TrackReportPage({
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}

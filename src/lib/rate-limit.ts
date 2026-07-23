@@ -32,8 +32,10 @@ export async function recordRateLimit(identifier: string, action = "submit_repor
 }
 
 export function getClientIdentifier(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for");
-  const ip = forwarded?.split(",")[0]?.trim() || "unknown";
+  const ip = request.headers.get("x-real-ip") ||
+    request.headers.get("x-vercel-forwarded-for") ||
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    "unknown";
 
   const cookieHeader = request.headers.get("cookie") || "";
   const sessionMatch = cookieHeader.match(/session_id=([^;]+)/);
@@ -43,10 +45,8 @@ export function getClientIdentifier(request: Request): string {
 }
 
 export function generateSessionId(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return result;
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const array = new Uint8Array(32);
+  crypto.getRandomValues(array);
+  return Array.from(array, (byte) => chars.charAt(byte % chars.length)).join("");
 }

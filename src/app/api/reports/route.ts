@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
+import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { generateReportId } from "@/lib/utils";
+import type { WaterProvider } from "@/lib/types";
 import { checkRateLimit, recordRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 import { sanitizeString, sanitizeHtml, isValidLat, isValidLng, isValidEnum, toSafeNumber } from "@/lib/sanitize";
 import { BARANGAYS, ISSUE_TYPES, WATER_PROVIDERS, BOUNDARIES_SJDM } from "@/lib/constants";
 
 export async function GET() {
-  const supabase = createServiceClient();
+  const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("reports")
     .select("*")
@@ -15,7 +17,7 @@ export async function GET() {
     .limit(100);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   const publicReports = data.map((r) => ({
@@ -96,11 +98,26 @@ export async function POST(request: Request) {
   const photoUrl = body.photo_url ? sanitizeString(body.photo_url, 500) : null;
   const startedAt = sanitizeString(body.started_at, 30);
 
-  const { data: seq } = await supabase.rpc("get_next_report_sequence");
-  const reportId = generateReportId(seq || 1);
+  // Generate a unique random report ID (retry on collision)
+  let reportId: string;
+  let isUnique = false;
+  let attempts = 0;
+  do {
+    reportId = generateReportId(waterProvider as WaterProvider);
+    const { data: existing } = await supabase
+      .from("reports")
+      .select("id")
+      .eq("report_id_display", reportId)
+      .maybeSingle();
+    isUnique = !existing;
+    attempts++;
+    if (attempts > 10) {
+      return NextResponse.json({ error: "Could not generate unique ID. Please try again." }, { status: 500 });
+    }
+  } while (!isUnique);
 
   // Try re-activating a matching stale report (same GPS ±~111m + barangay + issue)
-  let reactivated: any = null;
+  let reactivated: { id: string; report_id_display: string } | null = null;
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   if (lat !== null && lng !== null) {
     const { data: match } = await supabase
@@ -148,7 +165,7 @@ export async function POST(request: Request) {
       .single();
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
     report = inserted;
   }

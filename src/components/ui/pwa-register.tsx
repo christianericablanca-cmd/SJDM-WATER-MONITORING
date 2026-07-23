@@ -4,10 +4,15 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Download, X } from "lucide-react";
 import { useLanguage } from "@/components/ui/language-provider";
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: string }>;
+}
 import { t } from "@/lib/i18n";
 
 export function PwaRegister() {
-  const [prompt, setPrompt] = useState<Event | null>(null);
+  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = useState(false);
   const [installed, setInstalled] = useState(false);
   const { lang } = useLanguage();
@@ -15,7 +20,7 @@ export function PwaRegister() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const handleBeforeInstall = (e: Event) => {
+    const handleBeforeInstall = (e: BeforeInstallPromptEvent) => {
       e.preventDefault();
       setPrompt(e);
       const dismissed = localStorage.getItem("pwa_dismissed");
@@ -29,7 +34,7 @@ export function PwaRegister() {
       setShow(false);
     };
 
-    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall as EventListener);
     window.addEventListener("appinstalled", handleInstalled);
 
     if ("serviceWorker" in navigator) {
@@ -37,15 +42,15 @@ export function PwaRegister() {
     }
 
     return () => {
-      window.removeEventListener("beforeinstallprompt", handleBeforeInstall);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstall as EventListener);
       window.removeEventListener("appinstalled", handleInstalled);
     };
   }, []);
 
   const handleInstall = async () => {
     if (!prompt) return;
-    (prompt as any).prompt();
-    const result = await (prompt as any).userChoice;
+    prompt.prompt();
+    const result = await prompt.userChoice;
     if (result.outcome === "accepted") {
       setInstalled(true);
       setShow(false);

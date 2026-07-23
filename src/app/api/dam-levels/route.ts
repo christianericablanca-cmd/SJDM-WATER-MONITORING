@@ -8,74 +8,90 @@ interface DamLevel {
   deviation: number;
 }
 
-export const revalidate = 3600;
+const FALLBACK: DamLevel[] = [
+  { name: "Angat", level: 200.13, normalHigh: 212, date: "Jul 22, 2026", deviation: -11.87 },
+  { name: "Ipo", level: 100.35, normalHigh: 101, date: "Jul 22, 2026", deviation: -0.65 },
+  { name: "La Mesa", level: 79.62, normalHigh: 80.15, date: "Jul 22, 2026", deviation: -0.53 },
+];
+
+interface CacheEntry {
+  data: DamData;
+  expiry: number;
+}
+
+type DamData = { dams: DamLevel[]; updated: string; source: "live" | "fallback" };
+
+const CACHE_TTL = 30 * 60 * 1000;
+let cache: CacheEntry | null = null;
+let pending: Promise<DamData | null> | null = null;
+
+async function fetchFromPAGASA(): Promise<DamData> {
+  const res = await fetch("https://bagong.pagasa.dost.gov.ph/index.php/flood", {
+    signal: AbortSignal.timeout(25000),
+  });
+
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+  const html = await res.text();
+
+  const dams: DamLevel[] = [];
+  const dateMatch = html.match(/<h5[^>]*class="pull-right"[^>]*>([^<]+)<\/h5>/i);
+  const updateDate = dateMatch ? dateMatch[1].trim() : new Date().toISOString();
+
+  const targets = [
+    { id: "Angat", name: "Angat" },
+    { id: "Ipo", name: "Ipo" },
+    { id: "La Mesa", name: "La Mesa" },
+  ];
+
+  for (const t of targets) {
+    const escId = t.id.replace(/\s+/g, "\\s+");
+    const rows = html.match(new RegExp(
+      `<tr[^>]*>[\\s\\S]*?data-id="${escId}"[^>]*class="[^"]*current-data[^"]*"\\s+rowspan="2">([\\d.]+)<\\/td>[\\s\\S]*?<\\/tr>`,
+      "i"
+    ));
+    const nhwlMatch = html.match(new RegExp(
+      `data-id="${escId}"[^>]*class="[^"]*current-data[^"]*"\\s+rowspan="4">([\\d.]+)<\\/td>`,
+      "i"
+    ));
+
+    if (rows && nhwlMatch) {
+      const level = parseFloat(rows[1]);
+      const nhwl = parseFloat(nhwlMatch[1]);
+      dams.push({
+        name: t.name,
+        level,
+        normalHigh: nhwl,
+        date: updateDate,
+        deviation: parseFloat((level - nhwl).toFixed(2)),
+      });
+    }
+  }
+
+  if (dams.length === 0) throw new Error("No dams parsed");
+
+  return { dams, updated: new Date().toISOString(), source: "live" as const };
+}
 
 export async function GET() {
-  try {
-    const res = await fetch("https://www.pimohweather.com/pimohHydroforecast.php", {
-      headers: { "User-Agent": "WaterWatchSJDM/1.0" },
-      next: { revalidate: 3600 },
-    });
-
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-    const html = await res.text();
-
-    // Parse the dam table — look for Angat row
-    const dams: DamLevel[] = [];
-    const rowRegex = /<tr[^>]*>\s*<td[^>]*>\s*([A-Za-z\s]+?)<\/td>\s*<td[^>]*>\s*([\d:.APM\s]+?)<\/td>\s*<td[^>]*>\s*([\d.]+?)<\/td>\s*<td[^>]*>\s*([\d.]+?)<\/td>\s*<td[^>]*>\s*([\d.-]+?)<\/td>/gi;
-
-    // Simpler approach: extract the table body and parse key rows
-    const tableMatch = html.match(/<table[^>]*class="[^"]*hydro[^"]*"[^>]*>[\s\S]*?<\/table>/i) ||
-                       html.match(/Dam Levels[\s\S]*?<table[\s\S]*?<\/table>/i);
-
-    // Fall back to regex on full HTML for known dam names
-    const damNames = ["Angat", "Ipo", "La Mesa", "Ambuklao", "Binga", "San Roque", "Pantabangan", "Magat Dam", "Caliraya"];
-
-    for (const name of damNames) {
-      const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const pattern = new RegExp(
-        `${escaped}[\\s\\S]*?<td[^>]*?>([\\d:.APM\\s]+?)<\\/td>\\s*<td[^>]*?>([\\d.]+?)<\\/td>`,
-        'i'
-      );
-      const match = html.match(pattern);
-      if (match) {
-        const cleanName = name === "Magat Dam" ? "Magat" : name;
-
-        // Find normal high water level for this dam
-        const nhwlPattern = new RegExp(
-          `${escaped}[\\s\\S]*?<td[^>]*?>([\\d:.APM\\s]+?)<\\/td>\\s*<td[^>]*?>([\\d.]+?)<\\/td>\\s*<td[^>]*?>([\\d.-]+?)<\\/td>\\s*<td[^>]*?>([\\d.]+?)<\\/td>`,
-          'i'
-        );
-        const nhwlMatch = html.match(nhwlPattern);
-
-        dams.push({
-          name: cleanName,
-          level: parseFloat(match[2]),
-          normalHigh: nhwlMatch ? parseFloat(nhwlMatch[4]) : 0,
-          date: (match[1] || "").trim(),
-          deviation: nhwlMatch ? parseFloat(nhwlMatch[3]) : 0,
-        });
-      }
-    }
-
-    // If no dams found via regex, try simpler td-based extraction
-    if (dams.length === 0) {
-      const tdPattern = /<td[^>]*>\s*(Angat|Ipo|La Mesa|Ambuklao|Binga|San Roque|Pantabangan|Magat|Caliraya)\s*<\/td>[\s\S]*?<td[^>]*>[\s\S]*?<td[^>]*>\s*([\d.]+)\s*<\/td>[\s\S]*?<td[^>]*>\s*([\d.-]+)\s*<\/td>[\s\S]*?<td[^>]*>\s*([\d.]+)\s*<\/td>/gi;
-      let m;
-      while ((m = tdPattern.exec(html)) !== null) {
-        dams.push({
-          name: m[1],
-          level: parseFloat(m[2]),
-          normalHigh: parseFloat(m[4]),
-          date: new Date().toISOString(),
-          deviation: parseFloat(m[3]),
-        });
-      }
-    }
-
-    return NextResponse.json({ dams, updated: new Date().toISOString() });
-  } catch {
-    return NextResponse.json({ dams: [], error: "Could not fetch dam data" }, { status: 502 });
+  if (cache && Date.now() < cache.expiry) {
+    return NextResponse.json(cache.data);
   }
+
+  if (!pending) {
+    pending = fetchFromPAGASA().then((data) => {
+      cache = { data, expiry: Date.now() + CACHE_TTL };
+      pending = null;
+      return data;
+    }).catch(() => {
+      pending = null;
+      return null;
+    });
+  }
+
+  const live = await pending;
+  if (live) return NextResponse.json(live);
+  if (cache) return NextResponse.json(cache.data);
+
+  return NextResponse.json({ dams: FALLBACK, updated: new Date().toISOString(), source: "fallback" });
 }

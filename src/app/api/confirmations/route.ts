@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { checkRateLimit, recordRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { sanitizeString } from "@/lib/sanitize";
 
 export async function POST(request: Request) {
   const supabase = createServiceClient();
   const body = await request.json();
 
-  if (!body.report_id) {
+  const reportId = sanitizeString(body.report_id || "", 64);
+  if (!reportId) {
     return NextResponse.json({ error: "Missing report_id" }, { status: 400 });
   }
 
@@ -20,30 +22,21 @@ export async function POST(request: Request) {
   const sessionCookie = request.headers.get("cookie") || "";
   const sessionMatch = sessionCookie.match(/session_id=([^;]+)/);
   const sessionId = sessionMatch?.[1] || identifier;
+  const sessionHash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sessionId)))).map((b) => b.toString(16).padStart(2, "0")).join("");
 
   const { error } = await supabase.from("report_confirmations").insert({
-    report_id: body.report_id,
-    session_id: sessionId,
+    report_id: reportId,
+    session_id: sessionHash,
   });
 
   if (error) {
     if (error.code === "23505") {
       return NextResponse.json({ message: "Already confirmed" }, { status: 200 });
     }
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   await recordRateLimit(identifier, "confirm_report");
 
-  // Fetch updated report (trigger may have re-activated it)
-  const { data: report } = await supabase
-    .from("reports")
-    .select("status, resolved_at")
-    .eq("id", body.report_id)
-    .single();
-
-  return NextResponse.json({
-    success: true,
-    re_activated: report?.status !== "resolved" && report?.resolved_at === null,
-  }, { status: 201 });
+  return NextResponse.json({ success: true }, { status: 201 });
 }

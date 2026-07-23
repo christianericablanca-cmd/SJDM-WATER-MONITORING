@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import L from "leaflet";
 
 const BARANGAY_COLORS = [
   "#e8f5e9", "#fce4ec", "#e3f2fd", "#fff3e0", "#f3e5f5",
@@ -44,14 +45,14 @@ function hashCode(str: string): number {
 }
 
 interface BarangayBoundariesProps {
-  map: any;
+  map: L.Map;
   visible: boolean;
   lang: "en" | "tl";
 }
 
 export function BarangayBoundaries({ map, visible, lang }: BarangayBoundariesProps) {
-  const layerRef = useRef<any>(null);
-  const dataRef = useRef<any>(null);
+  const layerRef = useRef<L.GeoJSON | null>(null);
+  const dataRef = useRef<Record<string, unknown> | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
@@ -67,7 +68,6 @@ export function BarangayBoundaries({ map, visible, lang }: BarangayBoundariesPro
 
   useEffect(() => {
     if (!map || !loaded || !dataRef.current || typeof window === "undefined") return;
-    const L = require("leaflet");
 
     if (layerRef.current) {
       map.removeLayer(layerRef.current);
@@ -76,9 +76,10 @@ export function BarangayBoundaries({ map, visible, lang }: BarangayBoundariesPro
 
     if (!visible) return;
 
-    const geoLayer = L.geoJSON(dataRef.current, {
-      style: (feature: any) => {
-        const name = feature?.properties?.ADM4_EN || "";
+    const geoLayer = L.geoJSON(dataRef.current as unknown as GeoJSON.GeoJsonObject, {
+      style: (feature) => {
+        const props = (feature as unknown as Record<string, unknown>)?.properties as Record<string, unknown> | undefined;
+        const name = (props?.ADM4_EN as string) || "";
         const idx = hashCode(name) % BARANGAY_COLORS.length;
         return {
           fillColor: BARANGAY_COLORS[idx],
@@ -88,12 +89,13 @@ export function BarangayBoundaries({ map, visible, lang }: BarangayBoundariesPro
           fillOpacity: 0.35,
         };
       },
-      onEachFeature: (feature: any, layer: any) => {
-        const name = feature?.properties?.ADM4_EN || "";
+      onEachFeature: (feature, layer) => {
+        const props = (feature as unknown as Record<string, unknown>)?.properties as Record<string, unknown> | undefined;
+        const name = (props?.ADM4_EN as string) || "";
         layer.on({
-          mouseover: (e: any) => {
+          mouseover: (e: L.LeafletMouseEvent) => {
             const target = e.target;
-            target.setStyle({ fillOpacity: 0.6, weight: 2.5, opacity: 1 });
+            (target as L.Path).setStyle({ fillOpacity: 0.6, weight: 2.5, opacity: 1 });
             if (target.getTooltip()) target.closeTooltip();
             target.bindTooltip(name, {
               direction: "center",
@@ -101,10 +103,10 @@ export function BarangayBoundaries({ map, visible, lang }: BarangayBoundariesPro
               offset: L.point(0, 0),
             }).openTooltip();
           },
-          mouseout: (e: any) => {
+          mouseout: (e: L.LeafletMouseEvent) => {
             const target = e.target;
             const idx = hashCode(name) % BARANGAY_COLORS.length;
-            target.setStyle({
+            (target as L.Path).setStyle({
               fillColor: BARANGAY_COLORS[idx],
               color: STROKE_COLORS[idx],
               weight: 1.5,

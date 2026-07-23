@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,17 +10,19 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { formatDate, timeSince } from "@/lib/utils";
+import { cn, formatDate, timeSince } from "@/lib/utils";
 import { ISSUE_TYPES, STATUS_LABELS, BARANGAYS, BUSINESS_CATEGORIES, WATER_PROVIDERS, EMERGENCY_CATEGORIES } from "@/lib/constants";
 import { useToast } from "@/components/ui/toast-provider";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import dynamic from "next/dynamic";
 import type { WaterReport, Business, Announcement, EmergencyContact, ReportStatus } from "@/lib/types";
+import type { LucideIcon } from "lucide-react";
 import {
   LogOut, MessageSquare, Building2, Megaphone, Loader2, FileText,
   CheckCircle, XCircle, Search, Shield, AlertCircle, Plus, Eye,
   ChevronRight, Clock, MapPin, Droplets, Phone, Truck, LayoutDashboard, Download, Bug,
-  ChevronLeft, Pencil, Trash2, PhoneCall,
+  ChevronLeft, Pencil, Trash2, PhoneCall, Menu, X,
 } from "lucide-react";
 
 interface BusinessClaim {
@@ -46,8 +48,9 @@ interface Props {
   announcements: Announcement[];
   pendingCount: number;
   allClaims: BusinessClaim[];
-  bugReports: { id: string; description: string; contact: string | null; page: string | null; created_at: string }[];
+  bugReports: { id: string; description: string; contact: string | null; page: string | null; created_at: string; resolved: boolean }[];
   totalReports: number;
+  staleCount: number;
   totalBusinesses: number;
   totalAnnouncements: number;
   totalContacts: number;
@@ -57,11 +60,13 @@ interface Props {
   resolvedCount: number;
   deniedCount: number;
   verifiedBizCount: number;
+  announcementPage: number;
+  contactPage: number;
 }
 
 type Tab = "dashboard" | "reports" | "claims" | "directory" | "announcements" | "contacts" | "bugs";
 
-const TABS: { key: Tab; label: string; icon: any }[] = [
+const TABS: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { key: "reports", label: "Reports", icon: MessageSquare },
   { key: "claims", label: "Claims", icon: FileText },
@@ -71,6 +76,8 @@ const TABS: { key: Tab; label: string; icon: any }[] = [
   { key: "bugs", label: "Bugs", icon: Bug },
 ];
 
+const AdminLocationPicker = dynamic(() => import("@/components/reports/location-picker").then((m) => m.LocationPicker), { ssr: false });
+
 const CAT_LABEL: Record<string, string> = {
   water_refilling: "Water Refilling",
   mineral_water_delivery: "Mineral Water",
@@ -78,7 +85,7 @@ const CAT_LABEL: Record<string, string> = {
   laundry_services: "Laundry",
 };
 
-export function AdminDashboard({ reports, businesses, announcements, pendingCount, allClaims, bugReports, totalReports, totalBusinesses, totalAnnouncements, totalContacts, contacts, pageSize, approvedCount, resolvedCount, deniedCount, verifiedBizCount }: Props) {
+export function AdminDashboard({ reports, businesses, announcements, pendingCount, allClaims, bugReports, totalReports, staleCount, totalBusinesses, totalAnnouncements, totalContacts, contacts, pageSize, approvedCount, resolvedCount, deniedCount, verifiedBizCount, announcementPage, contactPage }: Props) {
   const pendingClaims = allClaims.filter((c) => c.status === "pending");
   const approvedClaims = allClaims.filter((c) => c.status === "approved");
   const rejectedClaims = allClaims.filter((c) => c.status === "rejected");
@@ -91,11 +98,6 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   const [search, setSearch] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const reportPage = 0;
-  const claimPage = 0;
-  const servicePage = 0;
-  const announcementPage = 0;
-
   // Filters
   const [providerFilter, setProviderFilter] = useState("all");
   // Export
@@ -103,9 +105,14 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   const [exporting, setExporting] = useState(false);
 
   // Sub-tabs
-  const [reportSubTab, setReportSubTab] = useState<"new" | "approved" | "resolved" | "denied">("new");
+  const [reportSubTab, setReportSubTab] = useState<"new" | "approved" | "resolved" | "denied" | "inactive">("new");
   const [claimSubTab, setClaimSubTab] = useState<"new" | "approved" | "rejected" | "disabled">("new");
   const [serviceSubTab, setServiceSubTab] = useState<"verified" | "community">("verified");
+  const [bugSubTab, setBugSubTab] = useState<"open" | "resolved">("open");
+  // Client-side pagination
+  const [reportPage, setReportPage] = useState(0);
+  const [claimPage, setClaimPage] = useState(0);
+  const [servicePage, setServicePage] = useState(0);
 
   // Detail dialogs
   const [viewReport, setViewReport] = useState<WaterReport | null>(null);
@@ -122,6 +129,13 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     contact: "", delivery_available: false, openTime: "", closeTime: "",
     latitude: "", longitude: "",
   });
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      router.refresh();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [router]);
 
   // Announcements CRUD
   const [showAnnounceDialog, setShowAnnounceDialog] = useState(false);
@@ -235,7 +249,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     setUpdating(null);
   };
 
-  const handleDeleteReport = useCallback(async (id: string) => {
+  const handleDeleteReport = useCallback(async (id: string) => { // eslint-disable-line react-hooks/preserve-manual-memoization
     setUpdating(id);
     setConfirmDelete(null);
     toastInfo("Deleting report…");
@@ -253,6 +267,23 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     }
     setUpdating(null);
   }, [router, toastInfo, toastSuccess, toastError]);
+
+  const handleResolveBug = async (id: string) => {
+    setUpdating(id);
+    toastInfo("Resolving bug report…");
+    const res = await fetch(`/api/bug-reports/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resolved: true }),
+    });
+    if (res.ok) {
+      toastSuccess("Bug resolved", "Marked as resolved.");
+      router.refresh();
+    } else {
+      toastError("Failed", "Could not resolve bug report.");
+    }
+    setUpdating(null);
+  };
 
   const handleClaimAction = async (claimId: string, action: "approved" | "rejected" | "disable" | "enable") => {
     setUpdating(claimId);
@@ -305,8 +336,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
       toastSuccess(isEdit ? "Updated" : "Created", `Announcement has been ${isEdit ? "updated" : "created"}.`);
       setShowAnnounceDialog(false);
       router.refresh();
-    } catch (err: any) {
-      toastError("Failed", err.message);
+    } catch (err: unknown) {
+      toastError("Failed", err instanceof Error ? err.message : "Something went wrong");
     }
     setSavingAnnounce(false);
   };
@@ -362,8 +393,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
       toastSuccess(isEdit ? "Updated" : "Created", `Contact has been ${isEdit ? "updated" : "added"}.`);
       setShowContactDialog(false);
       router.refresh();
-    } catch (err: any) {
-      toastError("Failed", err.message);
+    } catch (err: unknown) {
+      toastError("Failed", err instanceof Error ? err.message : "Something went wrong");
     }
     setSavingContact(false);
   };
@@ -392,7 +423,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     }
     setSavingBiz(true);
     try {
-      const body: any = { ...newBiz, operating_hours: newBiz.openTime && newBiz.closeTime ? `${newBiz.openTime} — ${newBiz.closeTime}` : "" };
+      const body: Record<string, unknown> = { ...newBiz, operating_hours: newBiz.openTime && newBiz.closeTime ? `${newBiz.openTime} — ${newBiz.closeTime}` : "" };
       body.latitude = newBiz.latitude ? parseFloat(newBiz.latitude) : null;
       body.longitude = newBiz.longitude ? parseFloat(newBiz.longitude) : null;
       const res = await fetch("/api/admin/directory", {
@@ -405,46 +436,95 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
       setShowAddBiz(false);
       setNewBiz({ name: "", category: "", address: "", barangay: "", contact: "", delivery_available: false, openTime: "", closeTime: "", latitude: "", longitude: "" });
       router.refresh();
-    } catch (err: any) {
-      toastError("Failed to add", err.message);
+    } catch (err: unknown) {
+      toastError("Failed to add", err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setSavingBiz(false);
     }
   };
 
-  const filteredReports = reports.filter((r) => {
-    if (reportSubTab === "new") return (!r.verified && !r.denied) || (r.verified && r.status === "submitted");
-    if (reportSubTab === "approved") return r.verified && r.status !== "resolved" && r.status !== "submitted";
+  const allFiltered = reports.filter((r) => {
+    if (reportSubTab === "new") return !r.verified && !r.denied;
+    if (reportSubTab === "approved") return r.status === "approved";
     if (reportSubTab === "resolved") return r.status === "resolved";
+    if (reportSubTab === "inactive") return r.status === "stale";
     return r.denied;
   }).filter((r) =>
     (!search || r.report_id_display.toLowerCase().includes(search.toLowerCase()) || r.barangay.toLowerCase().includes(search.toLowerCase())) &&
     (providerFilter === "all" || r.water_provider === providerFilter)
   );
+  const filteredReports = allFiltered.slice(reportPage * pageSize, (reportPage + 1) * pageSize);
 
-  const pendingReports = reports.filter((r) => (!r.verified && !r.denied) || (r.verified && r.status === "submitted"));
+  const claimSourceAll = claimSubTab === "new" ? pendingClaims : claimSubTab === "approved" ? approvedClaims : claimSubTab === "rejected" ? rejectedClaims : disabledClaims;
+  const claimSource = claimSourceAll.slice(claimPage * pageSize, (claimPage + 1) * pageSize);
 
-  const claimSource = claimSubTab === "new" ? pendingClaims : claimSubTab === "approved" ? approvedClaims : claimSubTab === "rejected" ? rejectedClaims : disabledClaims;
-
-  const filteredBiz = businesses.filter((b) => serviceSubTab === "verified" ? b.verified : !b.verified);
+  const filteredBizAll = businesses.filter((b) => serviceSubTab === "verified" ? b.verified : !b.verified);
+  const filteredBiz = filteredBizAll.slice(servicePage * pageSize, (servicePage + 1) * pageSize);
 
   const tabCounts: Record<string, string> = {
-    reports: `${totalReports}`,
+    reports: totalReports > 0 ? `${totalReports}` : "",
     claims: pendingClaims.length ? `${pendingClaims.length}` : "",
-    directory: `${totalBusinesses}`,
-    announcements: `${totalAnnouncements}`,
-    contacts: `${totalContacts}`,
+    directory: totalBusinesses > 0 ? `${totalBusinesses}` : "",
+    announcements: totalAnnouncements > 0 ? `${totalAnnouncements}` : "",
+    contacts: totalContacts > 0 ? `${totalContacts}` : "",
     bugs: bugReports.length ? `${bugReports.length}` : "",
   };
 
+  // Dashboard computations
+  const activeReports = reports.filter((r) => r.status !== "resolved" && r.status !== "denied" && r.status !== "stale");
+  const resolvedPct = totalReports > 0 ? Math.round((resolvedCount / totalReports) * 100) : 0;
+  const now = new Date();
+  const phNow = new Date(now.getTime() + 8 * 60 * 60 * 1000);
+  const todayStr = phNow.toISOString().slice(0, 10);
+  const reportsToday = reports.filter((r) => r.created_at?.slice(0, 10) === todayStr).length;
+  const openBugs = bugReports.filter((b) => !b.resolved).length;
+
+  const issueCounts: Record<string, number> = {};
+  activeReports.forEach((r) => { issueCounts[r.issue_type] = (issueCounts[r.issue_type] || 0) + 1; });
+  const totalActive = activeReports.length || 1;
+
+  const providerCounts: Record<string, number> = {};
+  reports.forEach((r) => { providerCounts[r.water_provider] = (providerCounts[r.water_provider] || 0) + 1; });
+
+  const barangayActive: Record<string, number> = {};
+  activeReports.forEach((r) => { barangayActive[r.barangay] = (barangayActive[r.barangay] || 0) + 1; });
+  const topBarangays = Object.entries(barangayActive).sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+  // Reports per day for last 14 days (PH time)
+  const dayLabels: string[] = [];
+  const dayCounts: number[] = [];
+  for (let i = 13; i >= 0; i--) {
+    const d = new Date(phNow);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    dayLabels.push(key.slice(5));
+    dayCounts.push(reports.filter((r) => r.created_at?.slice(0, 10) === key).length);
+  }
+  const maxDay = Math.max(...dayCounts, 1);
+
+  // Recent activity
+  const sortedByDate = [...reports].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  const recentActivity = sortedByDate.slice(0, 6);
+
+  // Latest pending
+  const latestPending = reports.filter((r) => r.status === "submitted" && !r.verified).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+
   return (
     <div className="flex min-h-[calc(100vh-4rem)] gap-0">
+      {/* Backdrop for mobile sidebar */}
+      {sidebarOpen && (
+        <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={() => setSidebarOpen(false)} />
+      )}
+
       {/* Sidebar */}
       <aside className={cn(
-        "w-56 shrink-0 border-r bg-muted/20 hidden lg:flex flex-col",
-        sidebarOpen ? "lg:flex" : "lg:hidden",
+        "w-56 shrink-0 border-r bg-background flex-col",
+        "fixed lg:static inset-y-0 left-0 z-40",
+        "transition-transform duration-200 ease-in-out lg:transition-none",
+        sidebarOpen ? "translate-x-0 lg:translate-x-0" : "-translate-x-full lg:translate-x-0",
+        "lg:flex",
       )}>
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-lg bg-water flex items-center justify-center shrink-0">
               <Shield className="h-4 w-4 text-white" />
@@ -454,9 +534,12 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               <p className="text-[10px] text-muted-foreground">Admin Panel</p>
             </div>
           </div>
+          <button className="lg:hidden p-1 text-muted-foreground hover:text-foreground" onClick={() => setSidebarOpen(false)}>
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
-        <nav className="flex-1 p-2 space-y-0.5">
+        <nav className="flex-1 p-2 space-y-0.5" aria-label="Main navigation">
           {TABS.map((t) => {
             const Icon = t.icon;
             const count = tabCounts[t.key];
@@ -484,10 +567,10 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
 
         <div className="p-3 border-t space-y-2">
             <div className="text-[10px] text-muted-foreground space-y-0.5 px-1">
-              <div className="flex justify-between"><span>Pending reports</span><span className="font-medium text-amber-600">{pendingReports.length}</span></div>
+              <div className="flex justify-between"><span>Pending reports</span><span className="font-medium text-amber-600">{pendingCount}</span></div>
               <div className="flex justify-between"><span>Total reports</span><span className="font-medium">{totalReports}</span></div>
-              <div className="flex justify-between"><span>Resolved</span><span className="font-medium text-emerald-600">{reports.filter((r) => r.status === "resolved").length}</span></div>
-              <div className="flex justify-between"><span>Inactive</span><span className="font-medium text-muted-foreground">{reports.filter((r) => r.status === "stale").length}</span></div>
+              <div className="flex justify-between"><span>Resolved</span><span className="font-medium text-emerald-600">{resolvedCount}</span></div>
+              <div className="flex justify-between"><span>Inactive</span><span className="font-medium text-muted-foreground">{staleCount}</span></div>
             </div>
           <Button variant="outline" size="sm" onClick={handleSignOut} className="w-full text-xs h-8 gap-1.5">
             <LogOut className="h-3 w-3" /> Sign Out
@@ -495,67 +578,226 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
         </div>
       </aside>
 
-      {/* Mobile tabs bar */}
-      <div className="flex lg:hidden w-full border-b bg-muted/10 sticky top-0 z-10">
-        <div className="flex overflow-x-auto gap-0 w-full">
-          {TABS.map((t) => {
-            const Icon = t.icon;
-            const count = tabCounts[t.key];
-            return (
-              <button key={t.key} onClick={() => switchTab(t.key)}
-                className={cn(
-                  "flex items-center gap-1 px-1.5 py-1.5 text-[8px] leading-tight font-medium border-b-2 transition-all shrink-0",
-                  tab === t.key ? "border-water text-water bg-background/50" : "border-transparent text-muted-foreground",
-                )}>
-                <Icon className="h-2.5 w-2.5 shrink-0" />
-                <span className="truncate max-w-[40px]">{t.label}</span>
-                {count ? <span className="text-[6px] tabular-nums">({count})</span> : null}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
       {/* Main work area */}
-      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-auto">
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-auto relative">
+        {/* Floating hamburger — mobile only */}
+        <button
+          className="lg:hidden fixed top-0 right-0 z-20 w-10 h-10 flex items-center justify-center rounded-bl-lg bg-background border-l border-b shadow-sm text-muted-foreground hover:text-foreground"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="h-4 w-4" />
+        </button>
         {/* === DASHBOARD TAB === */}
         {tab === "dashboard" && (
           <div className="space-y-6">
             <h2 className="text-base sm:text-lg font-semibold">Dashboard</h2>
-            <div className="grid grid-cols-2 gap-4">
+
+            {/* Summary stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="rounded-xl border p-4">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">Active Reports</span>
+                </div>
+                <p className="text-2xl font-bold tabular-nums">{activeReports.length}</p>
+              </div>
+              <div className="rounded-xl border p-4">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">Resolved</span>
+                </div>
+                <p className="text-2xl font-bold tabular-nums text-emerald-600">{resolvedPct}%</p>
+                <p className="text-[10px] text-muted-foreground">{resolvedCount}/{totalReports} reports</p>
+              </div>
+              <div className="rounded-xl border p-4">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">Today</span>
+                </div>
+                <p className="text-2xl font-bold tabular-nums">{reportsToday}</p>
+                <p className="text-[10px] text-muted-foreground">reports submitted</p>
+              </div>
+              <div className="rounded-xl border p-4">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">Needs Attention</span>
+                </div>
+                <p className="text-2xl font-bold tabular-nums text-amber-600">{staleCount + pendingCount + openBugs}</p>
+                <p className="text-[10px] text-muted-foreground">{staleCount} stale · {pendingCount} pending · {openBugs} bugs</p>
+              </div>
+            </div>
+
+            {/* Main grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Recent Activity */}
+              <div className="rounded-xl border p-4">
+                <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5 text-water" /> Recent Activity
+                </h3>
+                <div className="space-y-2">
+                  {recentActivity.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No reports yet.</p>
+                  ) : (
+                    recentActivity.map((r) => {
+                      const issue = ISSUE_TYPES.find((t) => t.value === r.issue_type);
+                      return (
+                        <div key={r.id} className="flex items-start gap-2.5 text-xs">
+                          <span className="text-sm shrink-0">{issue?.emoji}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-medium">{r.barangay}</span>
+                              <Badge variant={
+                                r.status === "resolved" ? "success" :
+                                r.status === "approved" || (r.status === "under_review" && r.verified) ? "success" :
+                                r.status === "stale" ? "secondary" :
+                                r.status === "denied" ? "destructive" : "outline"
+                              } className="text-[8px] px-1 py-0">{STATUS_LABELS[r.status] || r.status}</Badge>
+                            </div>
+                            <p className="text-muted-foreground truncate">{r.report_id_display} · {new Date(r.created_at).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+
+              {/* Issue Type Breakdown */}
+              <div className="rounded-xl border p-4">
+                <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                  <AlertCircle className="h-3.5 w-3.5 text-water" /> Active Issues
+                </h3>
+                {ISSUE_TYPES.filter((i) => (issueCounts[i.value] || 0) > 0).length === 0 ? (
+                  <p className="text-xs text-muted-foreground text-center py-4">No active issues.</p>
+                ) : (
+                  <div className="flex items-center gap-4">
+                    <div className="w-24 h-24 rounded-full shrink-0" style={{
+                      background: `conic-gradient(${ISSUE_TYPES.filter((i) => (issueCounts[i.value] || 0) > 0).map((issue, idx, arr) => {
+                        const pct = ((issueCounts[issue.value] || 0) / totalActive) * 100;
+                        const start = arr.slice(0, idx).reduce((s, is) => s + ((issueCounts[is.value] || 0) / totalActive) * 100, 0);
+                        const colors = ["#dc2626", "#ea580c", "#a16207", "#2563eb", "#7c3aed", "#6b7280"];
+                        return `${colors[idx % colors.length]} ${start}% ${start + pct}%`;
+                      }).join(", ")})`,
+                    }}>
+                      <div className="w-16 h-16 rounded-full bg-background m-auto relative top-1/2 -translate-y-1/2 flex items-center justify-center">
+                        <span className="text-lg font-bold tabular-nums">{activeReports.length}</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-1.5 min-w-0">
+                      {ISSUE_TYPES.filter((i) => (issueCounts[i.value] || 0) > 0).map((issue, idx) => {
+                        const count = issueCounts[issue.value] || 0;
+                        const pct = Math.round((count / totalActive) * 100);
+                        const colors = ["#dc2626", "#ea580c", "#a16207", "#2563eb", "#7c3aed", "#6b7280"];
+                        return (
+                          <div key={issue.value} className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: colors[idx % colors.length] }} />
+                              <span className="text-[10px] truncate">{issue.label}</span>
+                            </div>
+                            <span className="text-[10px] tabular-nums font-medium shrink-0">{count} ({pct}%)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Reports Over Time */}
+              <div className="rounded-xl border p-4">
+                <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                  <MessageSquare className="h-3.5 w-3.5 text-water" /> Reports (Last 14 Days)
+                </h3>
+                <div className="flex items-end gap-1 h-24">
+                  {dayLabels.map((label, i) => (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
+                      <span className="text-[9px] tabular-nums text-muted-foreground">{dayCounts[i] || ""}</span>
+                      <div className="w-full rounded-t-sm transition-all hover:opacity-80" style={{
+                        height: `${(dayCounts[i] / maxDay) * 100}%`,
+                        backgroundColor: dayCounts[i] > 0 ? "#1d7abf" : "transparent",
+                        minHeight: dayCounts[i] > 0 ? "4px" : "0",
+                      }} />
+                      <span className="text-[8px] text-muted-foreground">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Top Barangays + Providers */}
+              <div className="rounded-xl border p-4">
+                <h3 className="text-xs font-semibold mb-3 flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-water" /> Top Barangays & Providers
+                </h3>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium mb-1.5">Most Active Barangays</p>
+                    {topBarangays.length === 0 ? (
+                      <p className="text-[10px] text-muted-foreground">No active reports.</p>
+                    ) : (
+                      <div className="space-y-1">
+                        {topBarangays.map(([b, c], i) => (
+                          <div key={b} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-1.5">
+                              <span className={cn("w-1.5 h-1.5 rounded-full", i === 0 ? "bg-red-500" : i === 1 ? "bg-orange-500" : "bg-blue-500")} />
+                              <span className="truncate">{b}</span>
+                            </div>
+                            <span className="tabular-nums font-medium">{c} active</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-muted-foreground font-medium mb-1.5">By Water Provider</p>
+                    <div className="space-y-1">
+                      {WATER_PROVIDERS.map((p) => (
+                        <div key={p.value} className="flex items-center justify-between text-xs">
+                          <span>{p.label}</span>
+                          <span className="tabular-nums font-medium">{providerCounts[p.value] || 0}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick actions */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <button onClick={() => switchTab("reports")}
-                className="rounded-xl border p-5 text-left transition-all cursor-pointer hover:shadow-sm hover:border-water/40">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <MessageSquare className="h-4 w-4" />
-                  <span className="text-xs font-medium">Reports</span>
+                className="rounded-xl border p-3 sm:p-4 text-left transition-all hover:shadow-sm hover:border-water/40">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">All Reports</span>
                 </div>
-                <p className="text-3xl font-bold tabular-nums">{totalReports}</p>
-                <p className="text-xs text-amber-600 font-medium mt-1">{pendingReports.length} pending</p>
+                <p className="text-lg font-bold tabular-nums">{totalReports}</p>
+                <p className="text-[10px] text-muted-foreground">{pendingCount} pending review</p>
               </button>
-              <button onClick={() => switchTab("claims")}
-                className="rounded-xl border p-5 text-left transition-all cursor-pointer hover:shadow-sm hover:border-water/40">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <FileText className="h-4 w-4" />
-                  <span className="text-xs font-medium">Claims</span>
+              <button onClick={() => switchTab("bugs")}
+                className="rounded-xl border p-3 sm:p-4 text-left transition-all hover:shadow-sm hover:border-water/40">
+                <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                  <Bug className="h-3.5 w-3.5" />
+                  <span className="text-[10px] font-medium">Bug Reports</span>
                 </div>
-                <p className="text-3xl font-bold tabular-nums">{pendingClaims.length}</p>
+                <p className="text-lg font-bold tabular-nums">{bugReports.length}</p>
+                <p className="text-[10px] text-muted-foreground">{openBugs} unresolved</p>
               </button>
-              <button onClick={() => switchTab("directory")}
-                className="rounded-xl border p-5 text-left transition-all cursor-pointer hover:shadow-sm hover:border-water/40">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Building2 className="h-4 w-4" />
-                  <span className="text-xs font-medium">Services</span>
+              {latestPending && (
+                <div className="rounded-xl border p-3 sm:p-4">
+                  <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                    <Shield className="h-3.5 w-3.5" />
+                    <span className="text-[10px] font-medium">Quick Approve</span>
+                  </div>
+                  <p className="text-xs truncate font-medium">{latestPending.barangay} · {ISSUE_TYPES.find((t) => t.value === latestPending.issue_type)?.emoji} {latestPending.report_id_display}</p>
+                  <p className="text-[10px] text-muted-foreground mb-2">{new Date(latestPending.created_at).toLocaleDateString()}</p>
+                  <Button size="sm" className="h-7 text-[10px] gap-1 w-full"
+                    onClick={(e) => { e.stopPropagation(); handleApprove(latestPending.id); }}
+                    disabled={updating === latestPending.id}>
+                    {updating === latestPending.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                    Approve
+                  </Button>
                 </div>
-                <p className="text-3xl font-bold tabular-nums">{totalBusinesses}</p>
-              </button>
-              <button onClick={() => switchTab("announcements")}
-                className="rounded-xl border p-5 text-left transition-all cursor-pointer hover:shadow-sm hover:border-water/40">
-                <div className="flex items-center gap-2 text-muted-foreground mb-2">
-                  <Megaphone className="h-4 w-4" />
-                  <span className="text-xs font-medium">Announcements</span>
-                </div>
-                <p className="text-3xl font-bold tabular-nums">{announcements.length}</p>
-              </button>
+              )}
             </div>
           </div>
         )}
@@ -564,21 +806,22 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
         {tab === "reports" && (
           <div className="space-y-3">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-fit overflow-x-auto">
-                {(["new", "approved", "resolved", "denied"] as const).map((st) => (
-                   <button key={st} onClick={() => { setReportSubTab(st); setSearch(""); }}
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-full sm:w-fit overflow-x-auto">
+                {(["new", "approved", "resolved", "denied", "inactive"] as const).map((st) => (
+                   <button key={st} onClick={() => { setReportSubTab(st); setReportPage(0); }}
                     className={cn(
-                      "px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-all capitalize whitespace-nowrap",
+                      "px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-all whitespace-nowrap",
                       reportSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
                     )}>
                     {st === "new" ? `New (${pendingCount})`
                       : st === "approved" ? `Approved (${approvedCount})`
                       : st === "resolved" ? `Resolved (${resolvedCount})`
-                      : `Denied (${deniedCount})`}
+                      : st === "denied" ? `Denied (${deniedCount})`
+                      : `Inactive (${staleCount})`}
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <Select value={providerFilter} onValueChange={(v) => { setProviderFilter(v); }}>
                   <SelectTrigger className="h-8 text-[10px] sm:text-xs w-24 sm:w-28">
                     <SelectValue placeholder="Provider" />
@@ -621,7 +864,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               </div>
             </div>
 
-            {filteredReports.length === 0 ? (
+            {allFiltered.length === 0 ? (
               <div className="text-center py-16 bg-muted/30 rounded-xl border border-dashed">
                 <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">No reports found.</p>
@@ -637,8 +880,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                         <Badge variant={
                           report.status === "resolved" || report.status === "approved" || (report.status === "under_review" && report.verified) ? "success" :
                           report.status === "denied" ? "destructive" :
-                          report.status === "stale" ? "secondary" :
-                          report.status === "community_confirmed" ? "warning" : "outline"
+                          report.status === "stale" ? "secondary" : "outline"
                         } className="text-[8px] px-1 py-0">{STATUS_LABELS[report.status] || report.status}</Badge>
                       </div>
                       <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
@@ -659,8 +901,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   ))}
                 </div>
                 {/* Desktop table */}
-                <div className="hidden sm:block rounded-xl border overflow-hidden overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="hidden sm:block rounded-xl border overflow-x-auto">
+                  <table className="w-full text-sm min-w-[600px]">
                     <thead>
                       <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
                         <th className="text-left px-3 py-2.5 font-medium">ID</th>
@@ -683,8 +925,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                             <Badge variant={
                               report.status === "resolved" || report.status === "approved" || (report.status === "under_review" && report.verified) ? "success" :
                               report.status === "denied" ? "destructive" :
-                              report.status === "stale" ? "secondary" :
-                              report.status === "community_confirmed" ? "warning" : "outline"
+                              report.status === "stale" ? "secondary" : "outline"
                             } className="text-[9px] px-1.5 py-0">
                               {(report.status === "under_review" && report.verified) ? STATUS_LABELS.approved : STATUS_LABELS[report.status] || report.status.replace("_", " ")}
                             </Badge>
@@ -706,18 +947,18 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </div>
               </>
             )}
-            <Pagination page={reportPage} total={totalReports} pageSize={pageSize} onChange={(p) => navigate({ reportPage: String(p) })} />
+            <Pagination page={reportPage} total={allFiltered.length} pageSize={pageSize} onChange={(p) => { setReportPage(p); }} itemsCount={filteredReports.length} />
           </div>
         )}
 
         {/* === CLAIMS TAB === */}
         {tab === "claims" && (
           <div className="space-y-3">
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-full sm:w-fit overflow-x-auto">
               {(["new", "approved", "rejected", "disabled"] as const).map((st) => {
                 const count = st === "new" ? pendingClaims.length : st === "approved" ? approvedClaims.length : st === "rejected" ? rejectedClaims.length : disabledClaims.length;
                 return (
-                  <button key={st} onClick={() => { setClaimSubTab(st); }}
+                  <button key={st} onClick={() => { setClaimSubTab(st); setClaimPage(0); }}
                     className={cn(
                       "px-2 sm:px-3 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-all capitalize whitespace-nowrap",
                       claimSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -727,7 +968,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 );
               })}
             </div>
-            {claimSource.length === 0 ? (
+            {claimSourceAll.length === 0 ? (
               <div className="text-center py-16 bg-muted/30 rounded-xl border border-dashed">
                 <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">No {claimSubTab} claims.</p>
@@ -783,8 +1024,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   ))}
                 </div>
                 {/* Desktop table */}
-                <div className="hidden sm:block rounded-xl border overflow-hidden overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="hidden sm:block rounded-xl border overflow-x-auto">
+                  <table className="w-full text-sm min-w-[500px]">
                     <thead>
                       <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
                         <th className="text-left px-3 py-2.5 font-medium">Business</th>
@@ -846,7 +1087,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </div>
               </>
             )}
-            <Pagination page={claimPage} total={allClaims.length} pageSize={pageSize} onChange={(p) => navigate({ claimPage: String(p) })} />
+            <Pagination page={claimPage} total={claimSourceAll.length} pageSize={pageSize} onChange={(p) => { setClaimPage(p); }} itemsCount={claimSource.length} />
           </div>
         )}
 
@@ -854,11 +1095,11 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
         {tab === "directory" && (
           <div className="space-y-3">
             <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-fit max-w-full overflow-x-auto">
+            <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-full sm:w-fit overflow-x-auto">
               {(["verified", "community"] as const).map((st) => {
                 const count = st === "verified" ? verifiedBizCount : totalBusinesses - verifiedBizCount;
                 return (
-                  <button key={st} onClick={() => { setServiceSubTab(st); }}
+                  <button key={st} onClick={() => { setServiceSubTab(st); setServicePage(0); }}
                       className={cn(
                         "px-3 py-1.5 text-xs font-medium rounded-md transition-all capitalize",
                         serviceSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
@@ -921,17 +1162,17 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                           className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
                       </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div className="space-y-1.5">
-                        <Label>Latitude</Label>
-                        <Input value={newBiz.latitude} onChange={(e) => setNewBiz({ ...newBiz, latitude: e.target.value })} className="h-9 text-sm" placeholder="e.g. 14.7950" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Longitude</Label>
-                        <Input value={newBiz.longitude} onChange={(e) => setNewBiz({ ...newBiz, longitude: e.target.value })} className="h-9 text-sm" placeholder="e.g. 121.0380" />
+                    <div className="space-y-1.5">
+                      <Label>Map Location</Label>
+                      <div className="h-[250px] rounded-lg border overflow-hidden">
+                        <AdminLocationPicker
+                          barangay={newBiz.barangay}
+                          lat={newBiz.latitude ? parseFloat(newBiz.latitude) : null}
+                          lng={newBiz.longitude ? parseFloat(newBiz.longitude) : null}
+                          onPin={(lat, lng) => setNewBiz({ ...newBiz, latitude: String(lat), longitude: String(lng) })}
+                        />
                       </div>
                     </div>
-                    <p className="text-[9px] sm:text-[10px] text-muted-foreground">Get coordinates from Google Maps — right-click a location and select the lat/lng.</p>
                     <div className="flex items-center gap-2">
                       <input type="checkbox" id="delivery" checked={newBiz.delivery_available}
                         onChange={(e) => setNewBiz({ ...newBiz, delivery_available: e.target.checked })}
@@ -946,7 +1187,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               </Dialog>
             </div>
 
-            {filteredBiz.length === 0 ? (
+            {filteredBizAll.length === 0 ? (
               <div className="text-center py-16 bg-muted/30 rounded-xl border border-dashed">
                 <Building2 className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground">No {serviceSubTab} listings.</p>
@@ -968,8 +1209,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   ))}
                 </div>
                 {/* Desktop table */}
-                <div className="hidden sm:block rounded-xl border overflow-hidden overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="hidden sm:block rounded-xl border overflow-x-auto">
+                  <table className="w-full text-sm min-w-[450px]">
                     <thead>
                       <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
                         <th className="text-left px-3 py-2.5 font-medium">Name</th>
@@ -998,7 +1239,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </div>
               </>
             )}
-            <Pagination page={servicePage} total={totalBusinesses} pageSize={pageSize} onChange={(p) => navigate({ servicePage: String(p) })} />
+            <Pagination page={servicePage} total={filteredBizAll.length} pageSize={pageSize} onChange={(p) => { setServicePage(p); }} itemsCount={filteredBiz.length} />
           </div>
         )}
 
@@ -1049,8 +1290,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   ))}
                 </div>
                 {/* Desktop table */}
-                <div className="hidden sm:block rounded-xl border overflow-hidden overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="hidden sm:block rounded-xl border overflow-x-auto">
+                  <table className="w-full text-sm min-w-[500px]">
                     <thead>
                       <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
                         <th className="text-left px-3 py-2.5 font-medium">Title</th>
@@ -1150,8 +1391,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   ))}
                 </div>
                 {/* Desktop table */}
-                <div className="hidden sm:block rounded-xl border overflow-hidden overflow-x-auto">
-                  <table className="w-full text-sm">
+                <div className="hidden sm:block rounded-xl border overflow-x-auto">
+                  <table className="w-full text-sm min-w-[450px]">
                     <thead>
                       <tr className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
                         <th className="text-left px-3 py-2.5 font-medium">Name</th>
@@ -1189,7 +1430,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                 </div>
               </>
             )}
-            <Pagination page={announcementPage} total={totalContacts} pageSize={pageSize} onChange={(p) => navigate({ announcementPage: String(p) })} />
+            <Pagination page={contactPage} total={totalContacts} pageSize={pageSize} onChange={(p) => navigate({ contactPage: String(p) })} />
           </div>
         )}
 
@@ -1197,51 +1438,93 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold">Bug Reports ({bugReports.length})</h3>
-            </div>
-            {bugReports.length === 0 ? (
-              <div className="text-center py-12 text-xs text-muted-foreground">
-                <Bug className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
-                <p>No bug reports yet.</p>
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+                {(["open", "resolved"] as const).map((st) => {
+                  const count = st === "open" ? bugReports.filter((b) => !b.resolved).length : bugReports.filter((b) => b.resolved).length;
+                  return (
+                    <button key={st} onClick={() => setBugSubTab(st)}
+                      className={cn(
+                        "px-2.5 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-all capitalize whitespace-nowrap",
+                        bugSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                      )}>
+                      {st === "open" ? `Open (${count})` : `Resolved (${count})`}
+                    </button>
+                  );
+                })}
               </div>
-            ) : (
-              <>
-                {/* Mobile cards */}
-                <div className="sm:hidden space-y-2">
-                  {bugReports.map((bug) => (
-                    <div key={bug.id} className="border rounded-lg p-2.5 space-y-1">
-                      <p className="text-[9px] line-clamp-2">{bug.description}</p>
-                      <div className="flex items-center justify-between text-[8px] text-muted-foreground">
-                        <span>{bug.page || "—"} · {bug.contact || "—"}</span>
-                        <span>{new Date(bug.created_at).toLocaleDateString()}</span>
+            </div>
+            {(() => {
+              const filtered = bugReports.filter((b) => bugSubTab === "open" ? !b.resolved : b.resolved);
+              if (filtered.length === 0) {
+                return (
+                  <div className="text-center py-12 text-xs text-muted-foreground">
+                    <Bug className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                    <p>{bugSubTab === "open" ? "No open bug reports." : "No resolved bug reports."}</p>
+                  </div>
+                );
+              }
+              return (
+                <>
+                  {/* Mobile cards */}
+                  <div className="sm:hidden space-y-2">
+                    {filtered.map((bug) => (
+                      <div key={bug.id} className="border rounded-lg p-2.5 space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-[9px] line-clamp-2 flex-1">{bug.description}</p>
+                          {bug.resolved ? (
+                            <Badge variant="success" className="text-[8px] px-1 py-0 shrink-0">Resolved</Badge>
+                          ) : (
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 shrink-0 text-emerald-600"
+                              onClick={() => handleResolveBug(bug.id)} disabled={updating === bug.id}>
+                              <CheckCircle className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-[8px] text-muted-foreground">
+                          <span>{bug.page || "—"} · {bug.contact || "—"}</span>
+                          <span>{new Date(bug.created_at).toLocaleDateString()}</span>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-                {/* Desktop table */}
-                <div className="hidden sm:block bg-muted/40 border rounded-xl overflow-hidden">
-                  <table className="w-full text-xs">
-                    <thead>
-                      <tr className="border-b bg-muted/60">
-                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Description</th>
-                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Page</th>
-                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Contact</th>
-                        <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Date</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bugReports.map((bug) => (
-                        <tr key={bug.id} className="border-b last:border-0">
-                          <td className="px-3 py-2.5 max-w-xs truncate">{bug.description}</td>
-                          <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell max-w-[120px] truncate">{bug.page || "—"}</td>
-                          <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell max-w-[140px] truncate">{bug.contact || "—"}</td>
-                          <td className="px-3 py-2.5 text-muted-foreground text-right whitespace-nowrap">{new Date(bug.created_at).toLocaleDateString()}</td>
+                    ))}
+                  </div>
+                  {/* Desktop table */}
+                  <div className="hidden sm:block bg-muted/40 border rounded-xl overflow-x-auto">
+                    <table className="w-full text-xs min-w-[400px]">
+                      <thead>
+                        <tr className="border-b bg-muted/60">
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Description</th>
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Page</th>
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Contact</th>
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Date</th>
+                          <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
+                      </thead>
+                      <tbody>
+                        {filtered.map((bug) => (
+                          <tr key={bug.id} className="border-b last:border-0">
+                            <td className="px-3 py-2.5 max-w-xs truncate">{bug.description}</td>
+                            <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell max-w-[120px] truncate">{bug.page || "—"}</td>
+                            <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell max-w-[140px] truncate">{bug.contact || "—"}</td>
+                            <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell whitespace-nowrap">{new Date(bug.created_at).toLocaleDateString()}</td>
+                            <td className="px-3 py-2.5 text-right">
+                              {bug.resolved ? (
+                                <Badge variant="success" className="text-[9px] px-1.5 py-0">Resolved</Badge>
+                              ) : (
+                                <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-100"
+                                  onClick={() => handleResolveBug(bug.id)} disabled={updating === bug.id}>
+                                  {updating === bug.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle className="h-3 w-3" />}
+                                  Resolve
+                                </Button>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </main>
@@ -1358,7 +1641,6 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                     viewReport.status === "resolved" || viewReport.status === "approved" || (viewReport.status === "under_review" && viewReport.verified) ? "success" :
                     viewReport.status === "denied" ? "destructive" :
                     viewReport.status === "stale" ? "secondary" :
-                    viewReport.status === "community_confirmed" ? "warning" :
                     viewReport.status === "under_review" ? "default" : "outline"
                   } className="text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0 shrink-0">
                     {(viewReport.status === "under_review" && viewReport.verified) ? STATUS_LABELS.approved : STATUS_LABELS[viewReport.status] || viewReport.status.replace("_", " ")}
@@ -1426,35 +1708,46 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
 
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                   <div className="flex flex-wrap gap-1.5">
-                    {!viewReport.verified && !viewReport.denied && (
+                    {viewReport.status === "submitted" || viewReport.denied ? (
                       <>
-                        <Button size="sm" onClick={() => handleApprove(viewReport.id)}
-                          disabled={updating === viewReport.id} className="gap-1 h-7 sm:h-8 text-[10px] sm:text-xs">
-                          {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
-                          Approve
-                        </Button>
+                        {viewReport.denied ? (
+                          <Button size="sm" onClick={() => handleApprove(viewReport.id)}
+                            disabled={updating === viewReport.id} className="gap-1 h-7 sm:h-8 text-[10px] sm:text-xs">
+                            {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                            Revert
+                          </Button>
+                        ) : (
+                          <>
+                            <Button size="sm" onClick={() => handleApprove(viewReport.id)}
+                              disabled={updating === viewReport.id} className="gap-1 h-7 sm:h-8 text-[10px] sm:text-xs">
+                              {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                              Approve
+                            </Button>
+                            <Button size="sm" variant="destructive" onClick={() => { setDenyingId(viewReport.id); setDenyReason(""); }}
+                              disabled={updating === viewReport.id} className="gap-1 h-7 sm:h-8 text-[10px] sm:text-xs">
+                              {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                              Deny
+                            </Button>
+                          </>
+                        )}
+                      </>
+                    ) : viewReport.verified && !viewReport.denied ? (
+                      <>
                         <Button size="sm" variant="destructive" onClick={() => { setDenyingId(viewReport.id); setDenyReason(""); }}
                           disabled={updating === viewReport.id} className="gap-1 h-7 sm:h-8 text-[10px] sm:text-xs">
                           {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
                           Deny
                         </Button>
+                        <Button size="sm" variant="outline" className="text-destructive hover:text-destructive gap-1 h-7 sm:h-8 text-[10px] sm:text-xs"
+                          onClick={() => setConfirmDelete(viewReport.id)}
+                          disabled={updating === viewReport.id}>
+                          {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
+                          Delete
+                        </Button>
                       </>
-                    )}
-                    {viewReport.denied && (
-                      <Button size="sm" onClick={() => handleApprove(viewReport.id)}
-                        disabled={updating === viewReport.id} className="gap-1 h-7 sm:h-8 text-[10px] sm:text-xs">
-                        {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <CheckCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
-                        Revert
-                      </Button>
-                    )}
-                    <Button size="sm" variant="outline" className="text-destructive hover:text-destructive gap-1 h-7 sm:h-8 text-[10px] sm:text-xs"
-                      onClick={() => setConfirmDelete(viewReport.id)}
-                      disabled={updating === viewReport.id}>
-                      {updating === viewReport.id ? <Loader2 className="h-3 w-3 sm:h-3.5 sm:w-3.5 animate-spin" /> : <XCircle className="h-3 w-3 sm:h-3.5 sm:w-3.5" />}
-                      Delete
-                    </Button>
+                    ) : null}
                   </div>
-                  {viewReport.photo_url && (
+                  {viewReport.photo_url && !viewReport.denied && (
                     <Button size="sm" variant="ghost" className="text-[10px] sm:text-xs text-muted-foreground h-7 sm:h-8"
                       onClick={() => handleDeletePhoto(viewReport.id)}
                       disabled={updating === viewReport.id}>
@@ -1602,13 +1895,14 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   );
 }
 
-function Pagination({ page, total, pageSize = 15, onChange }: { page: number; total: number; pageSize?: number; onChange: (p: number) => void }) {
+function Pagination({ page, total, pageSize = 15, onChange, itemsCount }: { page: number; total: number; pageSize?: number; onChange: (p: number) => void; itemsCount?: number }) {
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
+  const visible = itemsCount ?? pageSize;
   return (
     <div className="flex items-center justify-between pt-2">
       <p className="text-[11px] text-muted-foreground">
-        {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total}
+        {visible === 0 ? 0 : page * pageSize + 1}–{page * pageSize + visible} of {total}
       </p>
       <div className="flex items-center gap-1">
         <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={page === 0} onClick={() => onChange(page - 1)}>
@@ -1631,6 +1925,3 @@ function Pagination({ page, total, pageSize = 15, onChange }: { page: number; to
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}

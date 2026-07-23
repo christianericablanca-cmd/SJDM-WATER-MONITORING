@@ -82,7 +82,7 @@ export function DisclaimPopover() {
             </Step>
 
             <Step icon={Search} title={t("Track Your Report", lang)} color="text-blue-600 bg-blue-50 dark:bg-blue-950/20">
-              {t("Save your Report ID (e.g. SJDM-WATER-00042) to check its status anytime. Visit the Submit Report page and enter it in the tracker. You'll see the full progress: Submitted → Under Review → Approved → Resolved → Inactive.", lang)}
+              {t("Save your Report ID (e.g. SJDM-PRIME-A3X9K) to check its status anytime. Visit the Submit Report page and enter it in the tracker. You'll see the full progress: Submitted → Under Review → Approved → Resolved → Inactive.", lang)}
             </Step>
 
             <Step icon={CheckCircle2} title={t("Mark as Resolved", lang)} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">

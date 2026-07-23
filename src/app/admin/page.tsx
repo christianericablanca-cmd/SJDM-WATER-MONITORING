@@ -6,13 +6,8 @@ export const dynamic = "force-dynamic";
 
 interface SearchParams {
   tab?: string;
-  reportPage?: string;
-  claimPage?: string;
-  servicePage?: string;
   announcementPage?: string;
-  reportSubTab?: string;
-  claimSubTab?: string;
-  serviceSubTab?: string;
+  contactPage?: string;
 }
 
 export default async function AdminPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -40,13 +35,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   }
 
   const PAGE_SIZE = 15;
-  const reportPage = Math.max(0, parseInt(params.reportPage || "0", 10) || 0);
-  const servicePage = Math.max(0, parseInt(params.servicePage || "0", 10) || 0);
   const announcementPage = Math.max(0, parseInt(params.announcementPage || "0", 10) || 0);
+  const contactPage = Math.max(0, parseInt(params.contactPage || "0", 10) || 0);
 
   const [
-    { data: reports, count: reportCount },
-    { data: businesses, count: businessCount },
+    { data: reports },
+    { data: businesses },
     { data: announcements, count: announcementCount },
     { count: pendingCount },
     { data: allClaims },
@@ -56,18 +50,24 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     { count: deniedCount },
     { count: verifiedBizCount },
     { data: contacts, count: contactCount },
+    { count: staleCount },
+    { count: allReportsCount },
+    { count: allBusinessCount },
   ] = await Promise.all([
-    supabase.from("reports").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(reportPage * PAGE_SIZE, (reportPage + 1) * PAGE_SIZE - 1),
-    supabase.from("businesses").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(servicePage * PAGE_SIZE, (servicePage + 1) * PAGE_SIZE - 1),
+    supabase.from("reports").select("*").order("created_at", { ascending: false }),
+    supabase.from("businesses").select("*").order("created_at", { ascending: false }),
     supabase.from("announcements").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(announcementPage * PAGE_SIZE, (announcementPage + 1) * PAGE_SIZE - 1),
     supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "submitted"),
     supabase.from("business_claims").select("*").order("created_at", { ascending: false }),
     supabase.from("bug_reports").select("*").order("created_at", { ascending: false }).limit(100),
-    supabase.from("reports").select("*", { count: "exact", head: true }).eq("verified", true).neq("status", "resolved").neq("status", "submitted"),
+    supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "approved"),
     supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "resolved"),
     supabase.from("reports").select("*", { count: "exact", head: true }).eq("denied", true),
     supabase.from("businesses").select("*", { count: "exact", head: true }).eq("verified", true),
-    supabase.from("emergency_contacts").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(announcementPage * PAGE_SIZE, (announcementPage + 1) * PAGE_SIZE - 1),
+    supabase.from("emergency_contacts").select("*", { count: "exact" }).order("created_at", { ascending: false }).range(contactPage * PAGE_SIZE, (contactPage + 1) * PAGE_SIZE - 1),
+    supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "stale"),
+    supabase.from("reports").select("*", { count: "exact", head: true }),
+    supabase.from("businesses").select("*", { count: "exact", head: true }),
   ]);
 
   return (
@@ -78,8 +78,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       pendingCount={pendingCount ?? 0}
       allClaims={allClaims ?? []}
       bugReports={bugReports ?? []}
-      totalReports={reportCount ?? 0}
-      totalBusinesses={businessCount ?? 0}
+      totalReports={allReportsCount ?? 0}
+      totalBusinesses={allBusinessCount ?? 0}
       totalAnnouncements={announcementCount ?? 0}
       totalContacts={contactCount ?? 0}
       contacts={contacts ?? []}
@@ -88,6 +88,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
       resolvedCount={resolvedCount ?? 0}
       deniedCount={deniedCount ?? 0}
       verifiedBizCount={verifiedBizCount ?? 0}
+      staleCount={staleCount ?? 0}
+      announcementPage={announcementPage}
+      contactPage={contactPage}
     />
   );
 }

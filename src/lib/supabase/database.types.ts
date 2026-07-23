@@ -77,6 +77,7 @@ export type Database = {
           id: string
           identifier: string | null
           page: string | null
+          resolved: boolean
         }
         Insert: {
           contact?: string | null
@@ -85,6 +86,7 @@ export type Database = {
           id?: string
           identifier?: string | null
           page?: string | null
+          resolved?: boolean
         }
         Update: {
           contact?: string | null
@@ -93,6 +95,7 @@ export type Database = {
           id?: string
           identifier?: string | null
           page?: string | null
+          resolved?: boolean
         }
         Relationships: []
       }

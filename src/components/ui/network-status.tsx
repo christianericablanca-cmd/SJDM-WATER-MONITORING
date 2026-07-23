@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { AlertTriangle, Wifi, WifiOff } from "lucide-react";
 
 export function NetworkStatus() {
@@ -8,7 +9,7 @@ export function NetworkStatus() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
-    setOnline(navigator.onLine);
+    setOnline(navigator.onLine); // eslint-disable-line react-hooks/set-state-in-effect
     const goOnline = () => { setOnline(true); setShow(true); setTimeout(() => setShow(false), 3000); };
     const goOffline = () => { setOnline(false); setShow(true); };
     window.addEventListener("online", goOnline);
@@ -39,6 +40,3 @@ export function NetworkStatus() {
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}

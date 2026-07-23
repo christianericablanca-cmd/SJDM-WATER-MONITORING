@@ -13,7 +13,8 @@ import { Turnstile } from "@/components/reports/turnstile";
 import { useToast } from "@/components/ui/toast-provider";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
-import { LocationPicker } from "@/components/reports/location-picker";
+import dynamic from "next/dynamic";
+const LocationPicker = dynamic(() => import("@/components/reports/location-picker").then((m) => m.LocationPicker), { ssr: false });
 import { Loader2, Upload, CheckCircle2, AlertCircle, Droplets, ArrowLeft, ArrowRight, Shield, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -105,6 +106,12 @@ export function ReportForm() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
+  const handlePin = useCallback((lat: number, lng: number) => {
+    setLat(lat);
+    setLng(lng);
+    setErrors((e) => ({ ...e, location: undefined }));
+  }, []);
+
   const markTouched = (...fields: string[]) => {
     setTouched((prev) => {
       const next = new Set(prev);
@@ -130,7 +137,7 @@ export function ReportForm() {
   }, [barangay, issueType, customIssue, waterProvider, startDate, startTime, photo, lat, lng]);
 
   const canNext = (): boolean => {
-    if (step === 0) return !!barangay && !!issueType && (issueType !== "other" || !!customIssue.trim());
+    if (step === 0) return !!barangay && !!issueType && (issueType !== "other" || !!customIssue.trim()) && !!lat && !!lng;
     if (step === 1) return !!startDate && !!startTime;
     return true;
   };
@@ -217,8 +224,8 @@ export function ReportForm() {
       toastSuccess(t("Report submitted!", lang), t("Your report ID is", lang) + " " + data.report_id_display + ". " + t("It's now subject for validation.", lang));
       setSubmitted(data.report_id_display);
       router.refresh();
-    } catch (err: any) {
-      toastError(t("Submission failed", lang), err.message || t("Please check your connection and try again.", lang));
+    } catch (err: unknown) {
+      toastError(t("Submission failed", lang), err instanceof Error ? err.message : t("Please check your connection and try again.", lang));
       setLoading(false);
     }
   };
@@ -326,7 +333,7 @@ export function ReportForm() {
               </div>
               <div className="space-y-1.5">
                 <Label>{t("Pin Location", lang)} <span className="text-destructive">*</span></Label>
-                <LocationPicker barangay={barangay} onPin={(lat, lng) => { setLat(lat); setLng(lng); setErrors((e) => ({ ...e, location: undefined })); }} lat={lat} lng={lng} />
+                <LocationPicker barangay={barangay} onPin={handlePin} lat={lat} lng={lng} />
                 {errors.location && (
                   <p className="text-[11px] text-destructive flex items-center gap-1 mt-0.5">
                     <AlertCircle className="h-3 w-3" /> {errors.location}

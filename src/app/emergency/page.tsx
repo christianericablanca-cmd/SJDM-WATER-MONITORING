@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Phone, MapPin, Globe, MessageCircle, Building2, Shield, Siren } from "lucide-react";
 import { EMERGENCY_CATEGORIES } from "@/lib/constants";
+import { cn } from "@/lib/utils";
 
 export const revalidate = 3600;
 
@@ -124,6 +125,3 @@ export default async function EmergencyPage() {
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}

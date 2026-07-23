@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
 import { Phone, MapPin, CheckCircle2, Clock, PlusCircle, Droplets, Truck, WashingMachine } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import type { Business } from "@/lib/types";
 import Link from "next/link";
 import { BusinessCard } from "@/components/directory/business-card";
@@ -100,6 +100,3 @@ export default async function DirectoryPage() {
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}

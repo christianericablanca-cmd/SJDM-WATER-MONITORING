@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { Droplets, TrendingDown, TrendingUp, Loader2 } from "lucide-react";
 
 interface DamLevel {
@@ -16,18 +17,26 @@ export function DamLevelWidget() {
   const [data, setData] = useState<DamLevel[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [source, setSource] = useState<"live" | "fallback">("fallback");
 
   useEffect(() => {
-    fetch("/api/dam-levels")
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+
+    fetch("/api/dam-levels", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => {
         setData(d.dams || []);
+        setSource(d.source || "fallback");
         setLoading(false);
       })
       .catch(() => {
         setError(true);
         setLoading(false);
-      });
+      })
+      .finally(() => clearTimeout(timeout));
+
+    return () => { controller.abort(); clearTimeout(timeout); };
   }, []);
 
   if (loading) {
@@ -41,12 +50,17 @@ export function DamLevelWidget() {
     );
   }
 
-  if (error || data.length === 0) {
-    return null;
-  }
-
   const angat = data.find((d) => d.name === "Angat");
-  if (!angat) return null;
+  if (!angat) {
+    return (
+      <Card className="p-3 sm:p-5 shadow-card">
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <Droplets className="h-4 w-4" />
+          <span className="text-xs">Dam data unavailable</span>
+        </div>
+      </Card>
+    );
+  }
 
   const percentOfNormal = angat.normalHigh > 0 ? Math.round((angat.level / angat.normalHigh) * 100) : 0;
   const isLow = percentOfNormal < 80;
@@ -61,9 +75,17 @@ export function DamLevelWidget() {
           </div>
           <h3 className="text-xs sm:text-sm font-semibold">Angat Dam</h3>
         </div>
-        <span className="text-[10px] sm:text-xs text-muted-foreground">
-          {angat.date || "Today"}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className={cn(
+            "text-[10px] px-1.5 py-0.5 rounded font-medium",
+            source === "live" ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400" : "bg-amber-100 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400",
+          )}>
+            {source === "live" ? "Live" : "Estimated"}
+          </span>
+          <span className="text-[10px] sm:text-xs text-muted-foreground">
+            {angat.date || "Today"}
+          </span>
+        </div>
       </div>
 
       <div className="flex items-end justify-between gap-4">
@@ -111,6 +133,3 @@ export function DamLevelWidget() {
   );
 }
 
-function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(" ");
-}

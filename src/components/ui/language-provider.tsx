@@ -24,15 +24,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("lang") as Language | null;
-    if (stored === "tl" || stored === "en") {
-      setLangState(stored);
+    if ((stored === "tl" || stored === "en") && stored !== lang) {
+      setLangState(stored); // eslint-disable-line react-hooks/set-state-in-effect
     }
-    setMounted(true);
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   const setLang = (l: Language) => {
     setLangState(l);
     localStorage.setItem("lang", l);
+    document.cookie = `lang=${l};path=/;max-age=${60 * 60 * 24 * 365};SameSite=Lax`;
   };
 
   if (!mounted) {

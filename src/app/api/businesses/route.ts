@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
-import { createServiceClient } from "@/lib/supabase/admin";
+import { createServerSupabase } from "@/lib/supabase/server";
 
 export async function GET() {
-  const supabase = createServiceClient();
+  const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("businesses")
-    .select("*")
-    .order("verified", { ascending: false })
+    .select("name, category, address, barangay, contact, facebook, delivery_available, operating_hours, coverage_area, estimated_fee, photo_url, latitude, longitude")
+    .eq("disabled", false)
     .order("name");
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(data ?? []);
 }

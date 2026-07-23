@@ -32,8 +32,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("theme") as Theme | null;
-    setThemeState(stored || "system");
-    setMounted(true);
+    if ((stored || "system") !== theme) {
+      setThemeState(stored || "system"); // eslint-disable-line react-hooks/set-state-in-effect
+    }
+    setMounted(true); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
 
   useEffect(() => {
@@ -41,7 +43,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("theme", theme);
 
     const resolvedTheme = theme === "system" ? getSystemTheme() : theme;
-    setResolved(resolvedTheme);
+    if (resolvedTheme !== resolved) {
+      setResolved(resolvedTheme); // eslint-disable-line react-hooks/set-state-in-effect
+    }
     document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
   }, [theme, mounted]);
 
@@ -50,7 +54,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
     const handler = () => {
       const resolvedTheme = getSystemTheme();
-      setResolved(resolvedTheme);
+      setResolved(resolvedTheme); // eslint-disable-line react-hooks/set-state-in-effect
       document.documentElement.classList.toggle("dark", resolvedTheme === "dark");
     };
     mq.addEventListener("change", handler);

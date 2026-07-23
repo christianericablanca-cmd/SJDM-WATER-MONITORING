@@ -38,8 +38,8 @@ export function BugReportButton() {
       if (!res.ok) throw new Error(data.error || "Something went wrong");
       toastSuccess(t("Bug reported", lang), t("Thanks for helping improve WaterWatch.", lang));
       setSent(true);
-    } catch (err: any) {
-      toastError("Failed", err.message);
+    } catch (err: unknown) {
+      toastError("Failed", err instanceof Error ? err.message : "Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -50,7 +50,7 @@ export function BugReportButton() {
       <button
         type="button"
         onClick={() => { setOpen(true); setSent(false); }}
-        className="fixed bottom-5 right-5 z-[9990] flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-foreground text-background shadow-lg text-xs font-medium hover:scale-105 transition-transform min-h-[44px] safe-bottom"
+        className="fixed bottom-20 sm:bottom-5 right-5 z-[9990] flex items-center gap-2 px-3.5 py-2.5 rounded-full bg-foreground text-background shadow-lg text-xs font-medium hover:scale-105 transition-transform min-h-[44px] safe-bottom"
       >
         <Bug className="h-3.5 w-3.5" />
         {t("Report Bug", lang)}

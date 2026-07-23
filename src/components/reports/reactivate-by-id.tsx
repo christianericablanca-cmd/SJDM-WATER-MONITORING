@@ -38,9 +38,10 @@ export function ReactivateById() {
         toastSuccess(t("Reactivated!", lang), `${t("Report", lang)} ${data.report_id_display} ${t("is now active.", lang)}`);
         setReportId("");
       }
-    } catch (err: any) {
-      setResult({ success: false, message: err.message || t("Connection error. Please try again.", lang) });
-      toastError(t("Reactivate failed", lang), err.message || t("Connection error. Please try again.", lang));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("Connection error. Please try again.", lang);
+      setResult({ success: false, message: msg });
+      toastError(t("Reactivate failed", lang), msg);
     } finally {
       setLoading(false);
     }
@@ -62,7 +63,7 @@ export function ReactivateById() {
             <Input
               value={reportId}
               onChange={(e) => setReportId(e.target.value)}
-              placeholder="SJDM-WATER-00002"
+               placeholder="SJDM-XXXXX-XXXXX"
               className="h-9 flex-1 font-mono text-xs"
               onKeyDown={(e) => e.key === "Enter" && handleReactivate()}
             />

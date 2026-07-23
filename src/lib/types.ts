@@ -57,7 +57,6 @@ export type ReportStatus =
   | "under_review"
   | "approved"
   | "denied"
-  | "community_confirmed"
   | "resolved"
   | "stale";
 

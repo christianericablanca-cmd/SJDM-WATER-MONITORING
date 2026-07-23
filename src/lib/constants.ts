@@ -37,7 +37,6 @@ export const STATUS_LABELS: Record<string, string> = {
   under_review: "Under Review",
   approved: "Approved",
   denied: "Denied",
-  community_confirmed: "Community Confirmed",
   resolved: "Resolved",
   stale: "Inactive",
 };
@@ -52,7 +51,6 @@ export const STATUS_DOTS: Record<string, string> = {
   under_review: "🔵",
   approved: "🟢",
   denied: "🔴",
-  community_confirmed: "🟠",
   resolved: "🟢",
   stale: "⚪",
 };
@@ -61,6 +59,11 @@ export const WATER_PROVIDERS: { value: WaterProvider; label: string; description
   { value: "primewater", label: "PrimeWater", description: "PrimeWater Infrastructure Corp." },
   { value: "metro_pacific", label: "Metro Pacific Water", description: "Metro Pacific Bulacan Water" },
 ];
+
+export const PROVIDER_CODE: Record<WaterProvider, string> = {
+  primewater: "PRIME",
+  metro_pacific: "MPBW",
+};
 
 export const BUSINESS_CATEGORIES: { value: BusinessCategory; label: string }[] = [
   { value: "water_refilling", label: "Water Refilling Stations" },

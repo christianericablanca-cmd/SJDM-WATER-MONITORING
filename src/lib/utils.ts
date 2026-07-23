@@ -6,9 +6,15 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function generateReportId(sequence: number): string {
-  const padded = String(sequence).padStart(5, "0");
-  return `SJDM-WATER-${padded}`;
+import { PROVIDER_CODE } from "@/lib/constants";
+import type { WaterProvider } from "@/lib/types";
+
+export function generateReportId(provider: WaterProvider): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  const array = new Uint8Array(5);
+  crypto.getRandomValues(array);
+  const code = Array.from(array, (byte) => chars.charAt(byte % chars.length)).join("");
+  return `SJDM-${PROVIDER_CODE[provider]}-${code}`;
 }
 
 export function formatDate(dateStr: string): string {
@@ -44,8 +50,8 @@ export function getConfidenceLevel(reports: number, confirmed: number): {
 } {
   if (reports === 0) return { level: "No Data", color: "gray" };
   const ratio = confirmed / reports;
-  if (ratio >= 0.7) return { level: "High", color: "green" };
-  if (ratio >= 0.4) return { level: "Medium", color: "yellow" };
+  if (ratio >= 0.7 && reports >= 5) return { level: "High", color: "green" };
+  if (ratio >= 0.4 && reports >= 3) return { level: "Medium", color: "yellow" };
   return { level: "Low", color: "red" };
 }
 

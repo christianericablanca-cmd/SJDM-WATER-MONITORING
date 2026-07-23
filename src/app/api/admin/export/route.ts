@@ -1,18 +1,23 @@
 import { NextResponse } from "next/server";
-import { createServerSupabase } from "@/lib/supabase/server";
+import { createAdminSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { ISSUE_TYPES, WATER_PROVIDERS } from "@/lib/constants";
 import * as XLSX from "xlsx";
 
 export async function GET(request: Request) {
-  const supabase = await createServerSupabase();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  try {
+    await createAdminSupabase();
+  } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const { searchParams } = new URL(request.url);
   const provider = searchParams.get("provider");
+
+  const validProviders = WATER_PROVIDERS.map((p) => p.value) as string[];
+  if (provider && provider !== "all" && !validProviders.includes(provider)) {
+    return NextResponse.json({ error: "Invalid provider" }, { status: 400 });
+  }
 
   const svc = createServiceClient();
   let query = svc.from("reports").select("*").eq("verified", true).neq("status", "resolved").order("barangay", { ascending: true }).order("created_at", { ascending: false });
@@ -24,7 +29,7 @@ export async function GET(request: Request) {
   const { data: reports, error } = await query.limit(5000);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   const reportList = reports ?? [];
@@ -33,7 +38,7 @@ export async function GET(request: Request) {
   const issueLabel = (v: string) => ISSUE_TYPES.find((t) => t.value === v)?.label || v;
   const statusLabel: Record<string, string> = {
     submitted: "Submitted", under_review: "Under Review", approved: "Approved", denied: "Denied",
-    community_confirmed: "Community Confirmed", resolved: "Resolved", stale: "Inactive",
+    resolved: "Resolved", stale: "Inactive",
   };
   const fmt = (d: string | null) => d ? new Date(d).toLocaleDateString("en-PH") : "";
 

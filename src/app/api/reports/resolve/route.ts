@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     .maybeSingle();
 
   if (findError) {
-    return NextResponse.json({ error: findError.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   if (!report) {
@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     .eq("id", report.id);
 
   if (updateError) {
-    return NextResponse.json({ error: updateError.message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 
   await recordRateLimit(identifier, "resolve_report");

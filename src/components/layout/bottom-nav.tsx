@@ -19,11 +19,13 @@ export function BottomNav() {
   const pathname = usePathname();
   const { lang } = useLanguage();
 
+  if (pathname?.startsWith("/admin")) return null;
+
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t safe-bottom">
       <div className="flex items-center justify-around h-16 px-1">
         {NAV_ITEMS.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          const active = pathname === item.href || pathname?.startsWith(item.href + "/");
           const isPrimary = item.key === "report";
           const Icon = item.icon;
 
@@ -31,6 +33,7 @@ export function BottomNav() {
             <Link
               key={item.key}
               href={item.href}
+              aria-current={active ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 flex-1 h-full transition-colors relative",
                 active ? "text-water" : "text-muted-foreground",

@@ -32,7 +32,7 @@ export default function PrivacyPage() {
           <li>Display water issue reports on the community map</li>
           <li>Track report status (submitted → resolved)</li>
           <li>Prevent spam and abuse via rate limiting</li>
-          <li>Aggregate anonymous statistics (e.g., "X reports in Kaypian")</li>
+          <li>Aggregate anonymous statistics (e.g., &ldquo;X reports in Kaypian&rdquo;)</li>
         </ul>
 
         <h2 className="text-lg font-semibold text-foreground">3. Data Sharing</h2>

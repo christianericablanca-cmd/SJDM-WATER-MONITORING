@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
 import { LocateFixed, MapPin, Loader2 } from "lucide-react";
 import { BARANGAY_COORDS } from "@/lib/constants";
+import type L from "leaflet";
+
+let _L: typeof L | null = null;
+function getL() {
+  if (typeof window === "undefined") return null;
+  if (!_L) _L = require("leaflet");
+  return _L;
+}
 
 const MapContainer = dynamic(() => import("react-leaflet").then((m) => m.MapContainer), { ssr: false });
 const TileLayer = dynamic(() => import("react-leaflet").then((m) => m.TileLayer), { ssr: false });
@@ -23,27 +31,31 @@ function normalize(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^sta/, "santa").replace(/^sto/, "santo");
 }
 
-function findMatchingFeatures(geojson: any, barangayName: string): any[] {
+function findMatchingFeatures(geojson: Record<string, unknown>, barangayName: string): Record<string, unknown>[] {
   const normalized = normalize(barangayName);
-  return (geojson.features || []).filter((f: any) => {
-    const ad4 = f.properties?.ADM4_EN || "";
+  const features = (geojson.features as Record<string, unknown>[]) || [];
+  return features.filter((f) => {
+    const props = f.properties as Record<string, unknown> | undefined;
+    const ad4 = (props?.ADM4_EN as string) || "";
     const n = normalize(ad4);
     return n === normalized || n.startsWith(normalized);
   });
 }
 
-function computeCentroid(geojson: any, barangayName: string): { lat: number; lng: number } | null {
+function computeCentroid(geojson: Record<string, unknown> | null, barangayName: string): { lat: number; lng: number } | null {
   if (!geojson || typeof window === "undefined") return null;
   const features = findMatchingFeatures(geojson, barangayName);
   if (features.length > 0) {
-    let allPoints: [number, number][] = [];
+    const allPoints: [number, number][] = [];
     for (const feature of features) {
-      const coords = feature.geometry.coordinates;
-      if (feature.geometry.type === "Polygon") {
-        coords[0].forEach((c: number[]) => allPoints.push([c[1], c[0]]));
-      } else if (feature.geometry.type === "MultiPolygon") {
-        coords.forEach((poly: number[][][]) => {
-          poly[0].forEach((c: number[]) => allPoints.push([c[1], c[0]]));
+      const geometry = feature.geometry as { type: string; coordinates: unknown } | undefined;
+      if (!geometry) continue;
+      const coords = geometry.coordinates;
+      if (geometry.type === "Polygon") {
+        (coords as number[][][])[0].forEach((c) => allPoints.push([c[1], c[0]]));
+      } else if (geometry.type === "MultiPolygon") {
+        (coords as number[][][][]).forEach((poly) => {
+          poly[0].forEach((c) => allPoints.push([c[1], c[0]]));
         });
       }
     }
@@ -67,22 +79,22 @@ function MapInner({
 }: {
   pos: { lat: number; lng: number };
   onPin: (lat: number, lng: number) => void;
-  geojsonData: any;
+  geojsonData: Record<string, unknown> | null;
   barangay: string;
-  mapRef: any;
+  mapRef: React.MutableRefObject<L.Map | null>;
 }) {
-  const markerRef = useRef<any>(null);
-  const boundaryLayerRef = useRef<any>(null);
+  const markerRef = useRef<L.Marker | null>(null);
+  const boundaryLayerRef = useRef<L.GeoJSON | null>(null);
 
   useEffect(() => {
     if (!mapRef.current || !geojsonData || typeof window === "undefined") return;
-    const L = require("leaflet");
     if (boundaryLayerRef.current) {
       mapRef.current.removeLayer(boundaryLayerRef.current);
     }
     const features = findMatchingFeatures(geojsonData, barangay);
     if (features.length > 0) {
-      const layer = L.geoJSON({ type: "FeatureCollection", features }, {
+      const leaflet = getL()!;
+      const layer = leaflet.geoJSON({ type: "FeatureCollection", features } as unknown as GeoJSON.GeoJSON, {
         style: {
           fillColor: "#1d7abf",
           color: "#1d7abf",
@@ -113,8 +125,9 @@ function MapInner({
 
   const icon = useMemo(() => {
     if (typeof window === "undefined") return null;
-    const L = require("leaflet");
-    return new L.DivIcon({
+    const leaflet = getL();
+    if (!leaflet) return null;
+    return new leaflet.DivIcon({
       className: "custom-marker",
       html: `<div style="width:20px;height:20px;border-radius:50%;background:#1d7abf;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3)"></div>`,
       iconSize: [20, 20],
@@ -163,13 +176,12 @@ function MapInner({
 
 export function LocationPicker({ barangay, onPin, lat, lng }: LocationPickerProps) {
   const { lang } = useLanguage();
-  const [geojsonData, setGeojsonData] = useState<any>(null);
+  const [geojsonData, setGeojsonData] = useState<Record<string, unknown> | null>(null);
   const [locating, setLocating] = useState(false);
-  const mapRef = useRef<any>(null);
-  const lastBarangayRef = useRef("");
+  const mapRef = useRef<L.Map | null>(null);
 
   const pos = useMemo(() => {
-    if (lat && lng && lastBarangayRef.current === barangay) {
+    if (lat && lng) {
       return { lat, lng };
     }
     if (!barangay) return { lat: 14.8136, lng: 121.0453 };
@@ -182,7 +194,6 @@ export function LocationPicker({ barangay, onPin, lat, lng }: LocationPickerProp
     if (!geojsonData || !barangay) return;
     const centroid = computeCentroid(geojsonData, barangay);
     if (centroid) {
-      lastBarangayRef.current = barangay;
       onPin(centroid.lat, centroid.lng);
     }
   }, [barangay, geojsonData]);
@@ -199,7 +210,6 @@ export function LocationPicker({ barangay, onPin, lat, lng }: LocationPickerProp
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        lastBarangayRef.current = barangay;
         onPin(position.coords.latitude, position.coords.longitude);
         setLocating(false);
       },

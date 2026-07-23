@@ -38,16 +38,9 @@ export function Footer() {
               <span key={link.key} className="flex items-center gap-4">
                 {i > 0 && <span className="w-px h-3 bg-border hidden sm:block" />}
                 {link.action === "howto" ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      localStorage.removeItem("ww-disclaim-accepted");
-                      window.location.reload();
-                    }}
-                    className="hover:text-water transition-colors"
-                  >
+                  <Link href="/disclaimer" className="hover:text-water transition-colors">
                     {t(link.key, lang)}
-                  </button>
+                  </Link>
                 ) : (
                   <Link href={link.href} className="hover:text-water transition-colors">
                     {t(link.key, lang)}
@@ -60,7 +53,7 @@ export function Footer() {
 
         <div className="border-t border-border/50 pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] text-muted-foreground">
           <p className="text-center sm:text-left">
-            {t("WaterWatch SJDM is an independent community platform. Not affiliated with water providers or the LGU.", lang)}
+            {t("WaterWatch SJDM is an independent community platform.", lang)} {t("Not affiliated with water providers or the LGU.", lang)}
           </p>
           <div className="flex items-center gap-3 text-center sm:text-right">
             <span className="flex items-center gap-1">

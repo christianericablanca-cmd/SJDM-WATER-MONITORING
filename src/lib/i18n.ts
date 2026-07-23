@@ -214,10 +214,10 @@ export const dict: Record<string, Record<string, string>> = {
   'Reports go <strong>inactive</strong> after <strong>7 days</strong> with no confirmations. If this issue is still ongoing, tap "I have this too" below, submit a new report at the same location, or use your Report ID to ': { tl: 'Ang mga ulat ay nagiging <strong>hindi aktibo</strong> pagkatapos ng <strong>7 araw</strong> nang walang kumpirmasyon. Kung may isyu pa rin, i-tap ang "Ako rin ay may ganito" sa ibaba, mag-ulat muli sa parehong lokasyon, o gamitin ang iyong Report ID para ' },
 
   // Business claim
-  "Submit Your Business": { tl: "Isumite ang Iyong Negosyo" },
-  "Add your water-related business to our community directory. Free listing — an admin will review your submission.":
-    { tl: "Idagdag ang iyong negosyong may kinalaman sa tubig sa aming direktoryo. Libre ang listing — susuriin ng admin ang iyong isinumite." },
-  "Business Info": { tl: "Impormasyon ng Negosyo" },
+  "Submit a Service": { tl: "Magsumite ng Serbisyo" },
+  "List your water-related service in our community directory. An admin will review your submission.":
+    { tl: "Ilagay ang iyong serbisyong may kinalaman sa tubig sa aming direktoryo. Susuriin ng admin ang iyong isinumite." },
+  "Service Info": { tl: "Impormasyon ng Serbisyo" },
   "Contact & Services": { tl: "Contact at Serbisyo" },
   Review: { tl: "Suriin" },
   "Business Name": { tl: "Pangalan ng Negosyo" },
@@ -390,7 +390,7 @@ export const dict: Record<string, Record<string, string>> = {
   "Identified as": { tl: "Tinukoy bilang" },
   "What happens next?": { tl: "Ano ang susunod na mangyayari?" },
   "An admin reviews your submission": { tl: "Susuriin ng admin ang iyong isinumite" },
-  "If approved, it appears in the Assistance Directory": { tl: "Kung aprubado, lalabas ito sa Assistance Directory" },
+  "If approved, it appears in the Services Directory": { tl: "Kung aprubado, lalabas ito sa Services Directory" },
   "You can contact us to update your listing anytime": { tl: "Pwede mo kaming kontakin para i-update ang listing mo anumang oras" },
 
   // Report form validation
@@ -407,8 +407,10 @@ export const dict: Record<string, Record<string, string>> = {
   // Track report lookup
   "Track": { tl: "Subaybayan" },
   "Enter a Report ID": { tl: "Maglagay ng Report ID" },
+  "e.g. SJDM-PRIME-A3X9K": { tl: "hal. SJDM-PRIME-A3X9K" },
   "Invalid format": { tl: "Hindi tamang format" },
-  "Format should be SJDM-WATER-00002": { tl: "Ang format ay dapat SJDM-WATER-00002" },
+  "Format should be SJDM-XXXXX-XXXXX": { tl: "Ang format ay dapat SJDM-XXXXX-XXXXX" },
+  "Format: SJDM-XXXXX-XXXXX": { tl: "Format: SJDM-XXXXX-XXXXX" },
 
   // Reactivate by ID
   "Enter your Report ID to reactivate an inactive or resolved report. Limited to once per 24h.": { tl: "Ilagay ang Report ID mo para i-reactivate ang inactive o resolved na ulat. Limitado sa isang beses kada 24 oras." },
@@ -432,7 +434,7 @@ export const dict: Record<string, Record<string, string>> = {
   "Community Confirmation": { tl: "Kumpirmasyon ng Komunidad" },
   "Other residents click \"I have this too\" to confirm the issue. More confirmations = higher confidence the problem is real and widespread. No account required to confirm.": { tl: "Ang ibang residente ay nagki-click ng \"Ako rin ay may ganito\" para kumpirmahin ang isyu. Mas maraming kumpirmasyon = mas mataas ang kumpyansa na totoo at laganap ang problema. Hindi kailangan ng account para kumpirmahin." },
   "Track Your Report": { tl: "Subaybayan ang Iyong Ulat" },
-  "Save your Report ID (e.g. SJDM-WATER-00042) to check its status anytime. Visit the Submit Report page and enter it in the tracker. You'll see the full progress: Submitted → Under Review → Approved → Resolved → Inactive.": { tl: "I-save ang Report ID mo (hal. SJDM-WATER-00042) para tingnan ang status nito anumang oras. Bisitahin ang Submit Report page at ilagay ito sa tracker. Makikita mo ang buong progreso: Submitted → Under Review → Approved → Resolved → Inactive." },
+  "Save your Report ID (e.g. SJDM-PRIME-A3X9K) to check its status anytime. Visit the Submit Report page and enter it in the tracker. You'll see the full progress: Submitted → Under Review → Approved → Resolved → Inactive.": { tl: "I-save ang Report ID mo (hal. SJDM-PRIME-A3X9K) para tingnan ang status nito anumang oras. Bisitahin ang Submit Report page at ilagay ito sa tracker. Makikita mo ang buong progreso: Submitted → Under Review → Approved → Resolved → Inactive." },
   "When water is back, visit your report and click \"Mark as Resolved\". This tells the community the issue is fixed. Limited to 3 resolves per hour.": { tl: "Kapag bumalik na ang tubig, bisitahin ang ulat mo at i-click ang \"Markahan bilang Naresolba\". Ito ay nagpapaalam sa komunidad na naayos na ang isyu. Limitado sa 3 resolve kada oras." },
   "Inactive After 7 Days": { tl: "Inactive Pagkatapos ng 7 Araw" },
   "Reports with no new confirmations or updates for 7 days automatically become inactive. They stay visible but are marked inactive on the map.": { tl: "Ang mga ulat na walang bagong kumpirmasyon o update sa loob ng 7 araw ay awtomatikong nagiging inactive. Nananatili itong visible pero minarkahan bilang inactive sa mapa." },
@@ -443,9 +445,9 @@ export const dict: Record<string, Record<string, string>> = {
   "Read full disclaimer": { tl: "Basahin ang buong disclaimer" },
 
   // Business claim form
-  "Tell us about your business": { tl: "Sabihin sa amin ang tungkol sa negosyo mo" },
+  "Tell us about your service": { tl: "Sabihin sa amin ang tungkol sa serbisyo mo" },
   "Contact & services": { tl: "Contact at serbisyo" },
-  "Basic information about your business. Fields marked * are required.": { tl: "Pangunahing impormasyon tungkol sa negosyo mo. Ang mga field na may * ay required." },
+  "Basic information about your service. Fields marked * are required.": { tl: "Pangunahing impormasyon tungkol sa serbisyo mo. Ang mga field na may * ay required." },
   "How can the community reach you? What services do you offer?": { tl: "Paano ka makokontak ng komunidad? Anong mga serbisyo ang inaalok mo?" },
   "Select your business type": { tl: "Pumili ng uri ng negosyo" },
   "Listing Submitted!": { tl: "Naisumite ang Listing!" },
@@ -559,6 +561,21 @@ export const dict: Record<string, Record<string, string>> = {
   "The page or report you are looking for does not exist.":
     { tl: "Ang pahina o ulat na hinahanap mo ay hindi umiiral." },
   Home: { tl: "Home" },
+  "Report not found. Double-check your Report ID.": { tl: "Hindi nahanap ang ulat. Suriin muli ang iyong Report ID." },
+  "Already have a Report ID?": { tl: "May Report ID ka na?" },
+
+  // Map cards (new)
+  "Active Issues": { tl: "Mga Aktibong Isyu" },
+  "active issues": { tl: "aktibong isyu" },
+  "Barangays Affected": { tl: "Apektadong Barangay" },
+  "Main Issue": { tl: "Pangunahing Isyu" },
+  "Mark Resolved": { tl: "Markahan bilang Naresolba" },
+  "Pin set": { tl: "Naka-set ang pin" },
+  "Pin location is required": { tl: "Kailangan ang pin location" },
+  "Pin location is not set. Go back to step 1 and select a barangay to place the pin.": { tl: "Hindi naka-set ang pin location. Bumalik sa step 1 at pumili ng barangay para ilagay ang pin." },
+  "An unexpected error occurred. Please try again.": { tl: "May nangyaring hindi inaasahang error. Paki-subukan muli." },
+  "e.g. ₱500 — ₱1,000": { tl: "hal. ₱500 — ₱1,000" },
+  "Drag the marker to your business location. The pin is constrained within the selected barangay.": { tl: "I-drag ang marker sa lokasyon ng iyong negosyo. Ang pin ay nakakulong sa loob ng napiling barangay." },
 };
 
 export function t(key: string, lang: "en" | "tl"): string {

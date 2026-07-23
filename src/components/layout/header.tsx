@@ -22,7 +22,7 @@ export function Header() {
   const { resolved, setTheme } = useTheme();
   const { lang, setLang } = useLanguage();
 
-  if (pathname.startsWith("/admin")) return null;
+  if (pathname?.startsWith("/admin")) return null;
 
   return (
     <header className="sticky top-0 z-50 w-full bg-background/80 backdrop-blur-xl border-b safe-top">
@@ -40,7 +40,7 @@ export function Header() {
 
           <nav className="hidden md:flex items-center gap-0.5">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href || pathname.startsWith(item.href + "/");
+              const active = pathname === item.href || pathname?.startsWith(item.href + "/");
               return (
                 <Link
                   key={item.href}

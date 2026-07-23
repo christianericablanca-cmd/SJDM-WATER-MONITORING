@@ -17,12 +17,12 @@ export function TrackReportLookup() {
 
   const handleTrack = () => {
     const trimmed = reportId.trim().toUpperCase();
-    if (!trimmed) { toastError(t("Enter a Report ID", lang), t("e.g. SJDM-WATER-00002", lang)); return; }
+    if (!trimmed) { toastError(t("Enter a Report ID", lang), t("e.g. SJDM-PRIME-A3X9K", lang)); return; }
 
-    const match = trimmed.match(/SJDM-WATER-0*(\d+)/i);
-    if (!match) { toastError(t("Invalid format", lang), t("Format should be SJDM-WATER-00002", lang)); return; }
+    const match = trimmed.match(/^SJDM-([A-Z0-9]+-[A-Z0-9]{5})$/i);
+    if (!match) { toastError(t("Invalid format", lang), t("Format should be SJDM-XXXXX-XXXXX", lang)); return; }
 
-    router.push("/report/" + match[1]);
+    router.push("/report/" + match[1].toUpperCase());
   };
 
   return (
@@ -30,7 +30,7 @@ export function TrackReportLookup() {
       <Input
         value={reportId}
         onChange={(e) => setReportId(e.target.value)}
-        placeholder="SJDM-WATER-00002"
+        placeholder="SJDM-XXXXX-XXXXX"
         className="h-9 font-mono text-xs flex-1"
         onKeyDown={(e) => e.key === "Enter" && handleTrack()}
       />
