@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast-provider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,7 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card } from "@/components/ui/card";
 
 import { cn } from "@/lib/utils";
-import { Send, Ban, Flag, ChevronDown, Settings, SlidersHorizontal } from "lucide-react";
+import { Send, Ban, Flag, ChevronDown, Settings, SlidersHorizontal, Droplets } from "lucide-react";
 import { BARANGAYS } from "@/lib/constants";
 
 type ChatMessage = {
@@ -181,7 +182,6 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       if (!res.ok) throw new Error(data.error || "Failed to send");
       if (data.message?.id) setMyIds((prev) => new Set(prev).add(data.message.id));
       setDraft("");
-      setAutoScroll(true);
     } catch (e) {
       toast.error(t("Failed", lang), e instanceof Error ? e.message : t("Something went wrong", lang));
     } finally {
@@ -232,6 +232,18 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
           {t("Anonymous community chat for SJDM water updates.", lang)}
         </p>
       </div>
+
+      <Link href="/report" className="block group -mb-2">
+        <div className="rounded-xl bg-gradient-to-r from-water/10 via-water/5 to-transparent border border-water/20 p-4 flex items-center justify-between hover:bg-water/15 transition-colors">
+          <div>
+            <p className="text-sm font-semibold text-water">{t("Report a Water Issue", lang)}</p>
+            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("Help the community track water problems in SJDM.", lang)}</p>
+          </div>
+          <div className="w-11 h-11 rounded-full bg-water flex items-center justify-center text-white shadow-sm group-hover:scale-105 group-hover:shadow transition-transform">
+            <Droplets className="h-5 w-5" />
+          </div>
+        </div>
+      </Link>
 
       <Card className="shadow-card overflow-hidden">
         {/* Chat header with settings/filter */}

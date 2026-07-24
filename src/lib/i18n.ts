@@ -585,6 +585,7 @@ export const dict: Record<string, Record<string, string>> = {
   // Community chat
   Anonymous: { tl: "Anonymous" },
   "Anonymous community chat for SJDM water updates.": { tl: "Anonymous na community chat para sa mga update sa tubig sa SJDM." },
+  "Help the community track water problems in SJDM.": { tl: "Tulungan ang komunidad na subaybayan ang mga problema sa tubig sa SJDM." },
   "Optional nickname": { tl: "Opsyonal na palayaw" },
   "No account required. Be respectful.": { tl: "Hindi kailangan ng account. Maging magalang." },
   "No messages yet.": { tl: "Wala pang mensahe." },
