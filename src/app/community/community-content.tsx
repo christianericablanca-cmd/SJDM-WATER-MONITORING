@@ -135,13 +135,13 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
     return msgs;
   }, [messages, barangayFilter, blocked]);
 
-  // Scroll to bottom on first load
+  // Auto-scroll to newest messages (container only, never the page)
   useEffect(() => {
     if (sorted.length === 0) return;
     const el = listRef.current;
     if (!el) return;
     el.scrollTop = el.scrollHeight;
-  }, []);
+  }, [sorted.length]);
 
   // Realtime
   useEffect(() => {
