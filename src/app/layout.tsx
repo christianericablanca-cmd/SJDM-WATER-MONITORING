@@ -32,6 +32,14 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "WaterWatch SJDM",
     locale: "en_PH",
+    url: "https://sjdmwater.vercel.app/",
+    images: [{ url: "https://sjdmwater.vercel.app/icons/icon-512.svg", width: 512, height: 512 }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WaterWatch SJDM",
+    description: "Community Water Monitoring for San Jose del Monte, Bulacan",
+    images: ["https://sjdmwater.vercel.app/icons/icon-512.svg"],
   },
 };
 
