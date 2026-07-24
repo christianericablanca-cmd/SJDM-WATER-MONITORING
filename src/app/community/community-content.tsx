@@ -9,11 +9,11 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast-provider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Card } from "@/components/ui/card";
 
 import { cn } from "@/lib/utils";
-import { Send, Ban, Flag, ChevronDown, Settings, SlidersHorizontal, ChevronLeft } from "lucide-react";
+import { Send, Ban, Flag, ChevronDown, Settings, SlidersHorizontal } from "lucide-react";
 import { BARANGAYS } from "@/lib/constants";
-import Link from "next/link";
 
 type ChatMessage = {
   id: string;
@@ -225,188 +225,148 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full bg-muted/20">
-      {/* Header — Telegram-style */}
-      <div className="shrink-0 bg-background border-b px-3 sm:px-4">
-        <div className="flex items-center h-12 gap-3">
-          <Link href="/map" className="flex items-center justify-center w-8 h-8 -ml-1 rounded-full hover:bg-muted transition-colors">
-            <ChevronLeft className="h-5 w-5 text-muted-foreground" />
-          </Link>
-          <div className="flex-1 min-w-0">
-            <div className="text-sm font-semibold leading-tight">{t("Community Chat", lang)}</div>
-            <div className="text-[10px] text-muted-foreground/60">{sorted.length} messages</div>
-          </div>
-          <div className="flex items-center gap-0.5">
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setShowSettings(!showSettings); setShowFilter(false); }}>
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setShowFilter(!showFilter); setShowSettings(false); }}>
-              <SlidersHorizontal className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-        {/* Settings banner (collapsible) */}
-        {showSettings && (
-          <div className="flex items-center gap-2 pb-2.5 -mt-0.5">
-            <Input
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
-              placeholder={t("Nickname", lang)}
-              className="h-8 text-xs flex-1"
-            />
-            <Select value={selectedBarangay} onValueChange={setSelectedBarangay}>
-              <SelectTrigger className="h-8 text-xs w-[120px]">
-                <SelectValue placeholder={t("Barangay", lang)} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">—</SelectItem>
-                {BARANGAYS.map((b) => (
-                  <SelectItem key={b} value={b}>{b}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-        {/* Filter banner (collapsible) */}
-        {showFilter && (
-          <div className="pb-2.5 -mt-0.5">
-            <Select value={barangayFilter} onValueChange={setBarangayFilter}>
-              <SelectTrigger className="h-8 text-xs">
-                <SelectValue placeholder={t("Filter by barangay", lang)} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">{t("All", lang)}</SelectItem>
-                {barangaysWithMsgs.map((b) => (
-                  <SelectItem key={b} value={b}>{b}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
+    <div className="page-container py-4 sm:py-8 space-y-4">
+      <div>
+        <h1 className="text-xl sm:text-3xl font-bold tracking-tight">{t("Community Chat", lang)}</h1>
+        <p className="text-xs sm:text-base text-muted-foreground">
+          {t("Anonymous community chat for SJDM water updates.", lang)}
+        </p>
       </div>
 
-      {/* Messages */}
-      <div ref={listRef} className="flex-1 overflow-y-auto px-3 sm:px-4 py-2 space-y-0.5">
-        {sorted.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center px-8">
-            <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
-              <Send className="h-5 w-5 text-muted-foreground/40" />
+      <Card className="shadow-card overflow-hidden">
+        {/* Chat header with settings/filter */}
+        <div className="border-b">
+          <div className="flex items-center h-11 px-3 gap-2">
+            <div className="flex-1 min-w-0">
+              <div className="text-xs text-muted-foreground/60">{sorted.length} messages</div>
             </div>
-            <p className="text-sm text-muted-foreground">{t("No messages yet.", lang)}</p>
-            <p className="text-xs text-muted-foreground/50 mt-1">{t("Be the first to say something.", lang)}</p>
+            <div className="flex items-center gap-0.5">
+              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => { setShowSettings(!showSettings); setShowFilter(false); }}>
+                <Settings className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => { setShowFilter(!showFilter); setShowSettings(false); }}>
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
-        ) : (
-          <>
-            {sorted.map((m, i) => {
-              const isMine = myIds.has(m.id);
-              const prev = i > 0 ? sorted[i - 1] : null;
-              const sep = showDateSep(m.created_at, prev?.created_at);
-              const firstOfUser = sep || !prev || prev.author_hash !== m.author_hash;
-              return (
-                <div key={m.id}>
-                  {sep && (
-                    <div className="flex justify-center py-2">
-                      <span className="text-[10px] font-medium text-muted-foreground/50 bg-background/80 px-3 py-1 rounded-full border">
-                        {dateChip(m.created_at)}
-                      </span>
-                    </div>
-                  )}
-                  <div className={cn("flex items-end gap-2 py-0.5", isMine ? "flex-row-reverse" : "")}>
-                    {/* Avatar column */}
-                    {!isMine && (
-                      <div className="w-8 shrink-0 self-end pb-1">
-                        {firstOfUser && (
-                          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white", avatarColor(m.author_hash))}>
-                            {(m.author_label || "?").charAt(0).toUpperCase()}
-                          </div>
-                        )}
+          {showSettings && (
+            <div className="flex items-center gap-2 px-3 pb-2.5">
+              <Input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder={t("Nickname", lang)} className="h-8 text-xs flex-1" />
+              <Select value={selectedBarangay} onValueChange={setSelectedBarangay}>
+                <SelectTrigger className="h-8 text-xs w-[120px]"><SelectValue placeholder={t("Barangay", lang)} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">—</SelectItem>
+                  {BARANGAYS.map((b) => (<SelectItem key={b} value={b}>{b}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+          {showFilter && (
+            <div className="px-3 pb-2.5">
+              <Select value={barangayFilter} onValueChange={setBarangayFilter}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder={t("Filter by barangay", lang)} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("All", lang)}</SelectItem>
+                  {barangaysWithMsgs.map((b) => (<SelectItem key={b} value={b}>{b}</SelectItem>))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+
+        {/* Messages */}
+        <div ref={listRef} className="max-h-[55dvh] min-h-[300px] overflow-y-auto p-3 space-y-0.5 bg-muted/10">
+          {sorted.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center px-8 py-16">
+              <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                <Send className="h-5 w-5 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm text-muted-foreground">{t("No messages yet.", lang)}</p>
+              <p className="text-xs text-muted-foreground/50 mt-1">{t("Be the first to say something.", lang)}</p>
+            </div>
+          ) : (
+            <>
+              {sorted.map((m, i) => {
+                const isMine = myIds.has(m.id);
+                const prev = i > 0 ? sorted[i - 1] : null;
+                const sep = showDateSep(m.created_at, prev?.created_at);
+                const firstOfUser = sep || !prev || prev.author_hash !== m.author_hash;
+                return (
+                  <div key={m.id}>
+                    {sep && (
+                      <div className="flex justify-center py-2">
+                        <span className="text-[10px] font-medium text-muted-foreground/50 bg-background/80 px-3 py-1 rounded-full border">
+                          {dateChip(m.created_at)}
+                        </span>
                       </div>
                     )}
-                    {/* Bubble column */}
-                    <div className={cn("flex flex-col", isMine ? "items-end" : "items-start", "max-w-[80%] sm:max-w-[70%]")}>
-                      {firstOfUser && !isMine && (
-                        <div className="flex items-center gap-1.5 mb-0.5 ml-1">
-                          <span className="text-[11px] font-medium text-muted-foreground/70">{m.author_label || t("Anonymous", lang)}</span>
-                          {m.barangay && <span className="text-[8px] text-water/60 bg-water/5 px-1.5 py-0.5 rounded">{m.barangay}</span>}
+                    <div className={cn("flex items-end gap-2 py-0.5", isMine ? "flex-row-reverse" : "")}>
+                      {!isMine && (
+                        <div className="w-8 shrink-0 self-end pb-1">
+                          {firstOfUser && (
+                            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white", avatarColor(m.author_hash))}>
+                              {(m.author_label || "?").charAt(0).toUpperCase()}
+                            </div>
+                          )}
                         </div>
                       )}
-                      <div className="flex items-end gap-1">
-                        <div className={cn(
-                          "px-3 py-1.5 text-sm leading-relaxed",
-                          isMine
-                            ? "bg-water text-white rounded-[18px] rounded-br-[6px]"
-                            : "bg-background border rounded-[18px] rounded-bl-[6px]",
-                        )}>
-                          <p className="whitespace-pre-wrap break-words">{m.message}</p>
-                          <div className={cn("flex items-center gap-1 mt-0.5", isMine ? "justify-end" : "justify-start")}>
-                            <span className={cn("text-[9px]", isMine ? "text-white/60" : "text-muted-foreground/50")}>
-                              {msgTime(m.created_at)}
-                            </span>
-                          </div>
-                        </div>
-                        {/* Actions — always visible as small icons */}
-                        {!isMine && (
-                          <div className="flex pb-1 gap-0.5">
-                            <button
-                              type="button"
-                              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-                              onClick={() => openBlock(m.author_hash)}
-                              title={t("Block", lang)}
-                            >
-                              <Ban className="h-3 w-3" />
-                            </button>
-                            <button
-                              type="button"
-                              className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-                              onClick={() => reportMessage(m.id)}
-                              title={t("Report", lang)}
-                            >
-                              <Flag className="h-3 w-3" />
-                            </button>
+                      <div className={cn("flex flex-col", isMine ? "items-end" : "items-start", "max-w-[80%] sm:max-w-[70%]")}>
+                        {firstOfUser && !isMine && (
+                          <div className="flex items-center gap-1.5 mb-0.5 ml-1">
+                            <span className="text-[11px] font-medium text-muted-foreground/70">{m.author_label || t("Anonymous", lang)}</span>
+                            {m.barangay && <span className="text-[8px] text-water/60 bg-water/5 px-1.5 py-0.5 rounded">{m.barangay}</span>}
                           </div>
                         )}
+                        <div className="flex items-end gap-1">
+                          <div className={cn("px-3 py-1.5 text-sm leading-relaxed", isMine ? "bg-water text-white rounded-[18px] rounded-br-[6px]" : "bg-background border rounded-[18px] rounded-bl-[6px]")}>
+                            <p className="whitespace-pre-wrap break-words">{m.message}</p>
+                            <div className={cn("flex items-center gap-1 mt-0.5", isMine ? "justify-end" : "justify-start")}>
+                              <span className={cn("text-[9px]", isMine ? "text-white/60" : "text-muted-foreground/50")}>{msgTime(m.created_at)}</span>
+                            </div>
+                          </div>
+                          {!isMine && (
+                            <div className="flex pb-1 gap-0.5">
+                              <button type="button" className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground transition-colors" onClick={() => openBlock(m.author_hash)} title={t("Block", lang)}>
+                                <Ban className="h-3 w-3" />
+                              </button>
+                              <button type="button" className="w-6 h-6 rounded-full flex items-center justify-center hover:bg-muted text-muted-foreground/40 hover:text-muted-foreground transition-colors" onClick={() => reportMessage(m.id)} title={t("Report", lang)}>
+                                <Flag className="h-3 w-3" />
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-            <div ref={bottomRef} />
-          </>
-        )}
-      </div>
-
-      {/* Jump to bottom */}
-      {!autoScroll && sorted.length > 0 && (
-        <div className="absolute bottom-16 left-1/2 -translate-x-1/2 z-10">
-          <Button size="sm" variant="secondary" className="h-7 rounded-full shadow text-xs px-3 gap-1" onClick={() => { setAutoScroll(true); bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }}>
-            <ChevronDown className="h-3 w-3" /> {t("New messages", lang)}
-          </Button>
+                );
+              })}
+              <div ref={bottomRef} />
+            </>
+          )}
         </div>
-      )}
 
-      {/* Input bar */}
-      <div className="shrink-0 bg-background border-t px-3 sm:px-4 py-2.5">
-        <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="flex items-end gap-2">
-          <Input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }}
-            placeholder={t("Message", lang)}
-            className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1"
-          />
-          <Button type="submit" disabled={sending || !draft.trim()} className="h-10 w-10 rounded-xl shrink-0" size="icon">
-            <Send className="h-4 w-4" />
-          </Button>
-        </form>
-      </div>
+        {/* Jump to bottom */}
+        {!autoScroll && sorted.length > 0 && (
+          <div className="absolute left-1/2 -translate-x-1/2 -mt-10 z-10">
+            <Button size="sm" variant="secondary" className="h-7 rounded-full shadow text-xs px-3 gap-1" onClick={() => { setAutoScroll(true); bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }}>
+              <ChevronDown className="h-3 w-3" /> {t("New messages", lang)}
+            </Button>
+          </div>
+        )}
+
+        {/* Input bar */}
+        <div className="border-t px-3 py-2.5">
+          <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="flex items-end gap-2">
+            <Input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
+            <Button type="submit" disabled={sending || !draft.trim()} className="h-10 w-10 rounded-xl shrink-0" size="icon"><Send className="h-4 w-4" /></Button>
+          </form>
+        </div>
+      </Card>
 
       {/* Block dialog */}
       <Dialog open={blockTarget !== null} onOpenChange={(open) => { if (!open) { setBlockTarget(null); setBlockNote(""); } }}>
         <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-base">{t("Block this user?", lang)}</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle className="text-base">{t("Block this user?", lang)}</DialogTitle></DialogHeader>
           <p className="text-sm text-muted-foreground">{t("Their messages will be hidden from your view.", lang)}</p>
           <Input value={blockNote} onChange={(e) => setBlockNote(e.target.value)} placeholder={t("Reason (optional)", lang)} className="h-9 text-sm" />
           <div className="flex justify-end gap-2 pt-1">
