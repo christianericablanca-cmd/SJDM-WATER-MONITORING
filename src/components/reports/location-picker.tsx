@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/components/ui/language-provider";
+import { useToast } from "@/components/ui/toast-provider";
 import { t } from "@/lib/i18n";
 import { LocateFixed, MapPin, Loader2 } from "lucide-react";
 import { BARANGAY_COORDS } from "@/lib/constants";
@@ -22,10 +23,16 @@ const Marker = dynamic(() => import("react-leaflet").then((m) => m.Marker), { ss
 
 interface LocationPickerProps {
   barangay: string;
-  onPin: (lat: number, lng: number) => void;
   lat: number | null;
   lng: number | null;
+  onPin: (lat: number, lng: number) => void;
 }
+
+const GEO_ERRORS: Record<number, string> = {
+  1: "Location access denied. Please allow GPS access in your browser settings.",
+  2: "Unable to determine your location. Check if GPS is enabled or try moving to an open area.",
+  3: "Location request timed out. Please try again.",
+};
 
 function normalize(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "").replace(/^sta/, "santa").replace(/^sto/, "santo");
@@ -176,6 +183,7 @@ function MapInner({
 
 export function LocationPicker({ barangay, onPin, lat, lng }: LocationPickerProps) {
   const { lang } = useLanguage();
+  const { error: toastError } = useToast();
   const [geojsonData, setGeojsonData] = useState<Record<string, unknown> | null>(null);
   const [locating, setLocating] = useState(false);
   const mapRef = useRef<L.Map | null>(null);
@@ -206,15 +214,22 @@ export function LocationPicker({ barangay, onPin, lat, lng }: LocationPickerProp
   }, []);
 
   const handleUseMyLocation = () => {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      toastError(t("Geolocation is not available on this device or browser.", lang));
+      return;
+    }
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (position) => {
         onPin(position.coords.latitude, position.coords.longitude);
         setLocating(false);
       },
-      () => setLocating(false),
-      { timeout: 10000 },
+      (err) => {
+        setLocating(false);
+        const msg = GEO_ERRORS[err.code] || "Could not fetch your location. Try again.";
+        toastError(t(msg, lang));
+      },
+      { timeout: 10000, enableHighAccuracy: true },
     );
   };
 
