@@ -123,7 +123,6 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   const [showFilter, setShowFilter] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const scrollPosRef = useRef(0);
 
   const room = "sjdm";
 
@@ -170,12 +169,14 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
-      if (data.message?.id) setMyIds((prev) => new Set(prev).add(data.message.id));
+      if (data.message) {
+        setMessages((prev) => (prev.some((p) => p.id === data.message.id) ? prev : [...prev, data.message]));
+        setMyIds((prev) => new Set(prev).add(data.message.id));
+        setTimeout(() => {
+          if (bottomRef.current) bottomRef.current.scrollIntoView();
+        }, 0);
+      }
       setDraft("");
-      // Restore scroll position after mobile keyboard closes
-      setTimeout(() => {
-        if (listRef.current) listRef.current.scrollTop = scrollPosRef.current;
-      }, 150);
     } catch (e) {
       toast.error(t("Failed", lang), e instanceof Error ? e.message : t("Something went wrong", lang));
     } finally {
@@ -342,7 +343,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
         {/* Input bar */}
         <div className="border-t px-3 py-2.5">
           <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="flex items-end gap-2">
-            <Input value={draft} onChange={(e) => setDraft(e.target.value)} onFocus={() => { if (listRef.current) scrollPosRef.current = listRef.current.scrollTop; }} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
+            <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
             <Button type="submit" disabled={sending || !draft.trim()} className="h-10 w-10 rounded-xl shrink-0" size="icon"><Send className="h-4 w-4" /></Button>
           </form>
         </div>
