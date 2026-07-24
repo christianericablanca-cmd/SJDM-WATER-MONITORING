@@ -77,9 +77,9 @@ export function DisclaimPopover() {
               {t("An admin reviews your report. If approved, it appears on the public Water Map. If denied, you'll see the reason. This keeps the map free of spam and false claims.", lang)}
             </Step>
 
-            <Step icon={ThumbsUp} title={t("Community Confirmation", lang)} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
-              {t('Other residents click "I have this too" to confirm the issue. More confirmations = higher confidence the problem is real and widespread. No account required to confirm.', lang)}
-            </Step>
+<Step icon={ThumbsUp} title={t("Community Reports", lang)} color="text-emerald-600 bg-emerald-50 dark:bg-emerald-950/20">
+  {t("Each report represents one household. More reports about the same issue in an area = higher confidence the problem is real and widespread. Reports are anonymous.", lang)}
+</Step>
 
             <Step icon={Search} title={t("Track Your Report", lang)} color="text-blue-600 bg-blue-50 dark:bg-blue-950/20">
               {t("Save your Report ID (e.g. SJDM-PRIME-A3X9K) to check its status anytime. Visit the Submit Report page and enter it in the tracker. You'll see the full progress: Submitted → Under Review → Approved → Resolved → Inactive.", lang)}
