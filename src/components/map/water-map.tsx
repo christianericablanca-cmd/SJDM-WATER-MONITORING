@@ -225,7 +225,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
               <div className="flex items-center gap-1.5">
                 <span className="font-semibold text-sm">{biz.name}</span>
                 {biz.verified && (
-                  <Badge variant="success" className="text-[8px] px-1 py-0">Verified</Badge>
+                  <Badge variant="success" className="text-[8px] px-1 py-0">{t("Verified", lang)}</Badge>
                 )}
               </div>
               <p className="text-[11px] text-muted-foreground">{CATEGORY_LABELS[biz.category] || biz.category}</p>
@@ -245,7 +245,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
               {biz.delivery_available && (
                 <div className="flex items-center gap-1.5 text-[11px] text-emerald-600">
                   <Truck className="h-3 w-3 shrink-0" />
-                  <span>Delivery available</span>
+                  <span>{t("Delivery available", lang)}</span>
                 </div>
               )}
             </div>
@@ -568,7 +568,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
           <span className="text-muted-foreground hidden sm:inline">{t("of", lang)} {liveReports.length} {t("reports", lang)}</span>
           <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
             <RefreshCw className="h-2.5 w-2.5" />
-            live
+            {t("live", lang)}
           </span>
           <span className="flex items-center gap-1 text-[9px] sm:text-[10px] text-muted-foreground">
             <Store className="h-2.5 w-2.5" />
@@ -644,7 +644,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
             className="sm:hidden flex items-center gap-1.5 text-[10px] py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px] bg-muted border-border text-muted-foreground"
           >
             <Info className="h-3.5 w-3.5" />
-            <span>Legend</span>
+            <span>{t("Legend", lang)}</span>
           </button>
           <div className="hidden sm:flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1 flex-1">
             {ISSUE_TYPES.map((issue) => (
@@ -682,7 +682,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
               )}
             >
               <Store className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Services</span>
+              <span className="hidden sm:inline">{t("Services", lang)}</span>
               {liveCount > 0 ? <span className="tabular-nums text-emerald-600 dark:text-emerald-400">+{liveCount}</span> : <span className="tabular-nums">{filteredReports.length}</span>}
             </button>
           </div>
@@ -702,11 +702,11 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
       <Dialog open={legendOpen} onOpenChange={setLegendOpen}>
         <DialogContent className="max-w-xs sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>Map Legend</DialogTitle>
+            <DialogTitle>{t("Map Legend", lang)}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Issue Types</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">{t("Issue Types", lang)}</p>
               <div className="space-y-2">
                 {ISSUE_TYPES.map((issue) => (
                   <div key={issue.value} className="flex items-center gap-2 text-sm">
@@ -721,7 +721,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
               </div>
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2">Services</p>
+              <p className="text-xs font-medium text-muted-foreground mb-2">{t("Services", lang)}</p>
               <div className="space-y-2">
                 {(["water_refilling", "water_tanker", "water_storage", "laundry_services"] as const).map((cat) => (
                   <div key={cat} className="flex items-center gap-2 text-sm">
@@ -775,7 +775,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-sm">{previewBusiness.name}</span>
                 {previewBusiness.verified && (
-                  <Badge variant="success" className="text-[10px] px-1.5 py-0">Verified</Badge>
+                  <Badge variant="success" className="text-[10px] px-1.5 py-0">{t("Verified", lang)}</Badge>
                 )}
               </div>
               <p className="text-xs text-muted-foreground">{CATEGORY_LABELS[previewBusiness.category] || previewBusiness.category}</p>
@@ -795,7 +795,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
               {previewBusiness.delivery_available && (
                 <div className="flex items-center gap-1.5 text-xs text-emerald-600">
                   <Truck className="h-3 w-3 shrink-0" />
-                  <span>Delivery available</span>
+                  <span>{t("Delivery available", lang)}</span>
                 </div>
               )}
             </div>

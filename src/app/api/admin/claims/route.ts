@@ -1,4 +1,4 @@
-import { createServerSupabase, createAdminSupabase } from "@/lib/supabase/server";
+﻿import { createServerSupabase, createAdminSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
 
@@ -28,6 +28,10 @@ export async function PATCH(request: Request) {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();

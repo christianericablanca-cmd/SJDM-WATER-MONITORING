@@ -7,10 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { ImagePreview } from "@/components/directory/image-preview";
 import { ImageIcon, MapIcon, ArrowLeft } from "lucide-react";
 import type { Business } from "@/lib/types";
+import { useLanguage } from "@/components/ui/language-provider";
+import { t } from "@/lib/i18n";
 
 const MiniMap = dynamic(() => import("./mini-map"), { ssr: false });
 
 export function BusinessCard({ biz }: { biz: Business }) {
+  const { lang } = useLanguage();
   const [open, setOpen] = useState(false);
   const [showMap, setShowMap] = useState(false);
 
@@ -28,7 +31,7 @@ export function BusinessCard({ biz }: { biz: Business }) {
           <p className="text-[9px] font-semibold truncate leading-tight">{biz.name}</p>
           <button onClick={() => setOpen(true)}
             className="text-[7px] text-water/80 hover:text-water cursor-pointer">
-            View details →
+            {t("View details →", lang)}
           </button>
         </div>
       </div>
@@ -50,25 +53,25 @@ export function BusinessCard({ biz }: { biz: Business }) {
                   )}
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant={biz.verified ? "success" : "outline"}>
-                      {biz.verified ? "Verified" : "Community"}
+                      {biz.verified ? t("Verified", lang) : t("Community", lang)}
                     </Badge>
                     <span className="text-muted-foreground text-xs">{biz.barangay}</span>
                   </div>
                   <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-                    {biz.address && <><span className="text-muted-foreground">Address</span><span>{biz.address}</span></>}
-                    {biz.contact && <><span className="text-muted-foreground">Contact</span><a href={`tel:${biz.contact}`} className="text-water font-medium">{biz.contact}</a></>}
-                    {biz.facebook && <><span className="text-muted-foreground">Facebook</span><a href={biz.facebook.startsWith("http") ? biz.facebook : `https://${biz.facebook}`} target="_blank" rel="noopener noreferrer" className="text-water font-medium break-all truncate">{biz.facebook.replace(/^https?:\/\//, "")}</a></>}
-                    {biz.operating_hours && <><span className="text-muted-foreground">Hours</span><span>{biz.operating_hours}</span></>}
-                    {biz.estimated_fee && <><span className="text-muted-foreground">Fee</span><span className="font-semibold">₱{biz.estimated_fee}</span></>}
-                    {biz.delivery_available && <><span className="text-muted-foreground">Delivery</span><span className="text-emerald-600 dark:text-emerald-400">Available</span></>}
-                    {biz.coverage_area && <><span className="text-muted-foreground">Coverage</span><span>{biz.coverage_area}</span></>}
-                    {biz.delivery_schedule && <><span className="text-muted-foreground">Schedule</span><span>{biz.delivery_schedule}</span></>}
-                    {biz.payment_options && <><span className="text-muted-foreground">Payment</span><span>{biz.payment_options}</span></>}
+                    {biz.address && <><span className="text-muted-foreground">{t("Address", lang)}</span><span>{biz.address}</span></>}
+                    {biz.contact && <><span className="text-muted-foreground">{t("Contact", lang)}</span><a href={`tel:${biz.contact}`} className="text-water font-medium">{biz.contact}</a></>}
+                    {biz.facebook && <><span className="text-muted-foreground">{t("Facebook Page", lang)}</span><a href={biz.facebook.startsWith("http") ? biz.facebook : `https://${biz.facebook}`} target="_blank" rel="noopener noreferrer" className="text-water font-medium break-all truncate">{biz.facebook.replace(/^https?:\/\//, "")}</a></>}
+                    {biz.operating_hours && <><span className="text-muted-foreground">{t("Hours", lang)}</span><span>{biz.operating_hours}</span></>}
+                    {biz.estimated_fee && <><span className="text-muted-foreground">{t("Fee", lang)}</span><span className="font-semibold">₱{biz.estimated_fee}</span></>}
+                    {biz.delivery_available && <><span className="text-muted-foreground">{t("Delivery", lang)}</span><span className="text-emerald-600 dark:text-emerald-400">{t("Available", lang)}</span></>}
+                    {biz.coverage_area && <><span className="text-muted-foreground">{t("Coverage", lang)}</span><span>{biz.coverage_area}</span></>}
+                    {biz.delivery_schedule && <><span className="text-muted-foreground">{t("Schedule", lang)}</span><span>{biz.delivery_schedule}</span></>}
+                    {biz.payment_options && <><span className="text-muted-foreground">{t("Payment", lang)}</span><span>{biz.payment_options}</span></>}
                   </div>
                   {biz.latitude && biz.longitude && (
                     <button onClick={() => setShowMap(true)}
                       className="flex items-center gap-1.5 text-water text-xs font-medium cursor-pointer mt-2">
-                      <MapIcon className="h-3.5 w-3.5" /> View on Map →
+                      <MapIcon className="h-3.5 w-3.5" /> {t("View on Map", lang)} →
                     </button>
                   )}
                 </div>
@@ -79,11 +82,11 @@ export function BusinessCard({ biz }: { biz: Business }) {
                     <MiniMap lat={biz.latitude} lng={biz.longitude} name={biz.name} />
                     <button onClick={() => setShowMap(false)}
                       className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground cursor-pointer">
-                      <ArrowLeft className="h-3.5 w-3.5" /> Back to details
+                      <ArrowLeft className="h-3.5 w-3.5" /> {t("Back to details", lang)}
                     </button>
                   </div>
                 ) : (
-                  <div className="text-xs text-muted-foreground">No map location available</div>
+                  <div className="text-xs text-muted-foreground">{t("No map location available", lang)}</div>
                 )}
               </div>
             </div>

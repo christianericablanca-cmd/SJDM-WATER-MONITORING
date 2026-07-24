@@ -34,6 +34,7 @@ export const ISSUE_EMOJI: Record<IssueType, string> = {
 
 export const STATUS_LABELS: Record<string, string> = {
   submitted: "Submitted",
+  under_review: "Under Review",
   approved: "Approved",
   denied: "Denied",
   resolved: "Resolved",
@@ -43,10 +44,13 @@ export const STATUS_LABELS: Record<string, string> = {
 export const WATER_PROVIDER_LABELS: Record<WaterProvider, string> = {
   primewater: "PrimeWater",
   metro_pacific: "Metro Pacific Water",
+  other: "Other",
+  unknown: "Unknown",
 };
 
 export const STATUS_DOTS: Record<string, string> = {
   submitted: "🟡",
+  under_review: "🟡",
   approved: "🟢",
   denied: "🔴",
   resolved: "🟢",
@@ -56,11 +60,15 @@ export const STATUS_DOTS: Record<string, string> = {
 export const WATER_PROVIDERS: { value: WaterProvider; label: string; description: string }[] = [
   { value: "primewater", label: "PrimeWater", description: "PrimeWater Infrastructure Corp." },
   { value: "metro_pacific", label: "Metro Pacific Water", description: "Metro Pacific Bulacan Water" },
+  { value: "other", label: "Other", description: "Other water provider" },
+  { value: "unknown", label: "Unknown", description: "Unspecified provider" },
 ];
 
 export const PROVIDER_CODE: Record<WaterProvider, string> = {
   primewater: "PRIME",
   metro_pacific: "MPBW",
+  other: "OTHER",
+  unknown: "UNKNWN",
 };
 
 export const BUSINESS_CATEGORIES: { value: BusinessCategory; label: string }[] = [

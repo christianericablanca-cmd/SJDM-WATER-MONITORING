@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { sanitizeString, sanitizeHtml } from "@/lib/sanitize";
@@ -20,6 +20,10 @@ export async function POST(request: Request) {
   const user = await checkAdmin();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
@@ -54,6 +58,10 @@ export async function PUT(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
   if (!body.id) {
     return NextResponse.json({ error: "Missing announcement id" }, { status: 400 });
@@ -83,6 +91,10 @@ export async function DELETE(request: Request) {
   const user = await checkAdmin();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();

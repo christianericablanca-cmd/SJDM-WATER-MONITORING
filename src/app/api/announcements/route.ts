@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const identifier = getClientIdentifier(request);
+  const { allowed } = await checkRateLimit(identifier, "list_announcements", 30, 1);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("announcements")

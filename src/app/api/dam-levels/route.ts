@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 interface DamLevel {
   name: string;
@@ -73,7 +74,13 @@ async function fetchFromPAGASA(): Promise<DamData> {
   return { dams, updated: new Date().toISOString(), source: "live" as const };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const identifier = getClientIdentifier(request);
+  const { allowed } = await checkRateLimit(identifier, "dam_levels", 60, 1);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   if (cache && Date.now() < cache.expiry) {
     return NextResponse.json(cache.data);
   }

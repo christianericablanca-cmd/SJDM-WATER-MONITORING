@@ -44,7 +44,7 @@ export async function POST(request: Request) {
   }
 
   const ext = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
-  const fileName = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
+  const fileName = `${crypto.randomUUID()}.${ext}`;
 
   const supabase = createServiceClient();
   const { data, error } = await supabase.storage

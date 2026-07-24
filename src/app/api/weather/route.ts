@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 const API_KEY = process.env.WEATHER_API_KEY;
 
-export async function GET() {
+export async function GET(request: Request) {
+  const identifier = getClientIdentifier(request);
+  const { allowed } = await checkRateLimit(identifier, "weather", 60, 1);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
   if (!API_KEY) return NextResponse.json({ error: "not_configured" }, { status: 500 });
   const url = `https://api.weatherapi.com/v1/forecast.json?key=${API_KEY}&q=14.8136,121.0453&days=1&aqi=no&alerts=no`;
   try {

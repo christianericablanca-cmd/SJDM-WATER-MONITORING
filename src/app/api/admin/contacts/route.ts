@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { sanitizeString, isValidLat, isValidLng, toSafeNumber } from "@/lib/sanitize";
@@ -32,6 +32,10 @@ export async function POST(request: Request) {
   const user = await checkAdmin();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
@@ -70,6 +74,10 @@ export async function PUT(request: Request) {
   const user = await checkAdmin();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
@@ -111,6 +119,10 @@ export async function DELETE(request: Request) {
   const user = await checkAdmin();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();

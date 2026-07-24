@@ -54,12 +54,13 @@ export type IssueType =
 
 export type ReportStatus =
   | "submitted"
+  | "under_review"
   | "approved"
   | "denied"
   | "resolved"
   | "stale";
 
-export type WaterProvider = "primewater" | "metro_pacific";
+export type WaterProvider = "primewater" | "metro_pacific" | "other" | "unknown";
 
 export interface WaterReport {
   id: string;

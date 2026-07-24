@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { checkRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
 export async function GET(request: Request) {
+  const identifier = getClientIdentifier(request);
+  const { allowed } = await checkRateLimit(identifier, "lookup_report", 30, 1);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   const { searchParams } = new URL(request.url);
   const id = searchParams.get("id");
 

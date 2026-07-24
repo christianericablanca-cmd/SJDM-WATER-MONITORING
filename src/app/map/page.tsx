@@ -4,7 +4,7 @@ import { AutoResolveTrigger } from "@/components/map/auto-resolve-trigger";
 import { DamLevelWidget } from "@/components/map/dam-level-widget";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ISSUE_TYPES, ISSUE_EMOJI, BARANGAYS } from "@/lib/constants";
+import { ISSUE_TYPES, ISSUE_EMOJI, BARANGAYS, WATER_PROVIDER_LABELS } from "@/lib/constants";
 import { getConfidenceLevel } from "@/lib/utils";
 import { ClipboardList, MapPin, AlertTriangle, Droplets, Building2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -90,7 +90,7 @@ export default async function MapPage() {
           { label: t("Active Issues", lang), value: activeReports.length, icon: ClipboardList, color: "text-water", bg: "bg-water-muted" },
           { label: t("Barangays Affected", lang), value: new Set(activeReports.map((r) => r.barangay)).size, total: BARANGAYS.length, icon: MapPin, color: "text-orange-500", bg: "bg-orange-50 dark:bg-orange-950/20" },
           { label: t("Main Issue", lang), value: topIssueLabel, icon: Droplets, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-950/20" },
-          { label: t("Provider", lang), value: `PrimeWater ${providerCounts.primewater ?? 0} · MPBW ${providerCounts.metro_pacific ?? 0}`, icon: Building2, color: "text-foreground", bg: "bg-muted dark:bg-muted/50" },
+          { label: t("Provider", lang), value: `${WATER_PROVIDER_LABELS["primewater"]} ${providerCounts.primewater ?? 0} · ${WATER_PROVIDER_LABELS["metro_pacific"]} ${providerCounts.metro_pacific ?? 0}`, icon: Building2, color: "text-foreground", bg: "bg-muted dark:bg-muted/50" },
         ]).map((stat: { label: string; value: string | number; total?: number; icon: React.ComponentType<{ className?: string }>; color: string; bg: string }) => (
           <Card key={stat.label} className="p-3 sm:p-4 shadow-card flex items-center gap-3">
             <div className={cn("w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0", stat.bg)}>

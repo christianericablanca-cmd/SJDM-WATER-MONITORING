@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 
@@ -7,6 +7,10 @@ export async function PUT(request: Request) {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
@@ -36,6 +40,10 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
   const body = await request.json();
   if (!body.id) {
     return NextResponse.json({ error: "Missing report id" }, { status: 400 });
@@ -61,6 +69,10 @@ export async function DELETE(request: Request) {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const body = await request.json();
