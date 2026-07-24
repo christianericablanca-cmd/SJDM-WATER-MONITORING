@@ -725,7 +725,9 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
               <div className="space-y-2">
                 {(["water_refilling", "water_tanker", "water_storage", "laundry_services"] as const).map((cat) => (
                   <div key={cat} className="flex items-center gap-2 text-sm">
-                    <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: CATEGORY_COLORS[cat] }} />
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded shrink-0" style={{ backgroundColor: CATEGORY_COLORS[cat], padding: 3 }}>
+                      <span dangerouslySetInnerHTML={{ __html: CATEGORY_SVG[cat] }} className="w-full h-full" />
+                    </span>
                     {CATEGORY_LABELS[cat]}
                   </div>
                 ))}
