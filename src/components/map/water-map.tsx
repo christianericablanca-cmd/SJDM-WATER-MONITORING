@@ -683,7 +683,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
             >
               <Store className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{t("Services", lang)}</span>
-              {liveCount > 0 ? <span className="tabular-nums text-emerald-600 dark:text-emerald-400">+{liveCount}</span> : <span className="tabular-nums">{filteredReports.length}</span>}
+              {liveCount > 0 ? <span className="tabular-nums text-emerald-600 dark:text-emerald-400">+{liveCount}</span> : <span className="tabular-nums">{businessesWithCoords.length}</span>}
             </button>
           </div>
       </div>

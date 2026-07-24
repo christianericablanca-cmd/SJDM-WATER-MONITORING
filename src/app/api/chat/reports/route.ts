@@ -23,10 +23,20 @@ export async function POST(request: Request) {
   }
 
   const svc = createServiceClient();
+
+  // Fetch the reported message to get the author info
+  const { data: msg } = await svc
+    .from("chat_messages")
+    .select("author_hash, author_label")
+    .eq("id", messageId)
+    .single();
+
   const { error } = await svc.from("chat_reports").insert({
     message_id: messageId,
     reason: reason || null,
     reporter_hash: identifier,
+    author_hash: msg?.author_hash ?? null,
+    author_label: msg?.author_label ?? null,
   });
 
   if (error) {

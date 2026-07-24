@@ -40,6 +40,19 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const identifier = getClientIdentifier(request);
+
+  // Check if this user is blocked
+  const svc = createServiceClient();
+  const { data: block } = await svc
+    .from("chat_blocks")
+    .select("author_hash")
+    .eq("author_hash", identifier)
+    .maybeSingle();
+
+  if (block) {
+    return NextResponse.json({ error: "You are blocked from posting messages." }, { status: 403 });
+  }
+
   const { allowed } = await checkRateLimit(identifier, "chat_message", 6, 1);
   if (!allowed) {
     return NextResponse.json({ error: "Slow down. Please wait a bit before sending again." }, { status: 429 });
@@ -60,7 +73,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Message cannot be empty" }, { status: 400 });
   }
 
-  const svc = createServiceClient();
   const { data, error } = await svc
     .from("chat_messages")
     .insert({

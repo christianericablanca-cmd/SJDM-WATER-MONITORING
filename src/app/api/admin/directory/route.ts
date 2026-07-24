@@ -12,7 +12,7 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { name, category, address, barangay, contact, delivery_available, operating_hours, latitude, longitude } = body;
+  const { name, category, address, barangay, contact, delivery_available, operating_hours, latitude, longitude, photo_url } = body;
 
   if (!name || !category || !address || !barangay) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -49,6 +49,7 @@ export async function POST(request: Request) {
       operating_hours: operating_hours ? sanitizeString(operating_hours, 500) : null,
       latitude: lat,
       longitude: lng,
+      photo_url: photo_url || null,
       verified: true,
     })
     .select()

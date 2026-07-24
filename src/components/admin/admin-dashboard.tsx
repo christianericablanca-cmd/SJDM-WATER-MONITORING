@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,7 @@ import {
   LogOut, MessageSquare, Building2, Megaphone, Loader2, FileText,
   CheckCircle, XCircle, Search, Shield, AlertCircle, Plus, Eye,
   ChevronRight, Clock, MapPin, Droplets, Phone, Truck, LayoutDashboard, Download, Bug,
-  ChevronLeft, Pencil, Trash2, PhoneCall, Menu, X,
+  ChevronLeft, Pencil, Trash2, PhoneCall, Menu, X, Ban, Flag,
 } from "lucide-react";
 
 interface BusinessClaim {
@@ -64,7 +64,7 @@ interface Props {
   contactPage: number;
 }
 
-type Tab = "dashboard" | "reports" | "claims" | "directory" | "announcements" | "contacts" | "bugs";
+type Tab = "dashboard" | "reports" | "claims" | "directory" | "announcements" | "contacts" | "bugs" | "chat";
 
 const TABS: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -74,6 +74,7 @@ const TABS: { key: Tab; label: string; icon: LucideIcon }[] = [
   { key: "announcements", label: "Announcements", icon: Megaphone },
   { key: "contacts", label: "Contacts", icon: PhoneCall },
   { key: "bugs", label: "Bugs", icon: Bug },
+  { key: "chat", label: "Chat", icon: MessageSquare },
 ];
 
 const AdminLocationPicker = dynamic(() => import("@/components/reports/location-picker").then((m) => m.LocationPicker), { ssr: false });
@@ -109,6 +110,12 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   const [claimSubTab, setClaimSubTab] = useState<"new" | "approved" | "rejected" | "disabled">("new");
   const [serviceSubTab, setServiceSubTab] = useState<"verified" | "community">("verified");
   const [bugSubTab, setBugSubTab] = useState<"open" | "resolved">("open");
+  // Chat
+  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatReports, setChatReports] = useState<any[]>([]);
+  const [chatBlocks, setChatBlocks] = useState<any[]>([]);
+  const [loadingChat, setLoadingChat] = useState(false);
+  const [chatSubTab, setChatSubTab] = useState<"all" | "deleted" | "reported" | "blocked">("all");
   // Client-side pagination
   const [reportPage, setReportPage] = useState(0);
   const [claimPage, setClaimPage] = useState(0);
@@ -124,11 +131,14 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   // Add business dialog
   const [showAddBiz, setShowAddBiz] = useState(false);
   const [savingBiz, setSavingBiz] = useState(false);
+  const [bizPhoto, setBizPhoto] = useState<File | null>(null);
+  const [bizPhotoPreview, setBizPhotoPreview] = useState<string | null>(null);
   const [newBiz, setNewBiz] = useState({
     name: "", category: "", address: "", barangay: "",
     contact: "", delivery_available: false, openTime: "", closeTime: "",
     latitude: "", longitude: "",
   });
+  const [coordDraft, setCoordDraft] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -136,6 +146,102 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     }, 15000);
     return () => clearInterval(interval);
   }, [router]);
+
+  useEffect(() => {
+    if (tab !== "chat") return;
+    setLoadingChat(true);
+    Promise.all([
+      fetch("/api/admin/chat").then((r) => r.json()),
+      fetch("/api/admin/chat/blocks").then((r) => r.json()),
+    ])
+      .then(([msgData, blockData]) => {
+        setChatMessages(msgData.messages ?? []);
+        setChatBlocks(blockData.blocks ?? []);
+      })
+      .catch(() => {})
+      .finally(() => setLoadingChat(false));
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab !== "chat") return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-chat-reports")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_reports" },
+        (payload) => {
+          setChatReports((prev) => [...prev, payload.new as any]);
+        },
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [tab]);
+
+  const reportedHashes = useMemo(() => {
+    const map = new Map<string, number>();
+    chatReports.forEach((r) => {
+      if (r.author_hash) {
+        map.set(r.author_hash, (map.get(r.author_hash) || 0) + 1);
+      }
+    });
+    return map;
+  }, [chatReports]);
+
+  const handleDeleteChatMessage = async (id: string) => {
+    setUpdating(id);
+    try {
+      const res = await fetch("/api/admin/chat", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to delete");
+      setChatMessages((prev) => prev.map((m) => (m.id === id ? { ...m, deleted: true } : m)));
+      toastSuccess("Deleted");
+    } catch (e) {
+      toastError("Failed", e instanceof Error ? e.message : "Error");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleBlockUser = async (authorHash: string, label?: string) => {
+    setUpdating(authorHash);
+    try {
+      const res = await fetch("/api/admin/chat/blocks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ author_hash: authorHash, notes: label || null }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to block");
+      setChatBlocks((prev) => [{ author_hash: authorHash, notes: label || null, created_at: new Date().toISOString() }, ...prev]);
+      toastSuccess("Blocked");
+    } catch (e) {
+      toastError("Failed", e instanceof Error ? e.message : "Error");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleUnblockUser = async (authorHash: string) => {
+    setUpdating(authorHash);
+    try {
+      const res = await fetch(`/api/admin/chat/blocks?author_hash=${encodeURIComponent(authorHash)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to unblock");
+      setChatBlocks((prev) => prev.filter((b) => b.author_hash !== authorHash));
+      toastSuccess("Unblocked");
+    } catch (e) {
+      toastError("Failed", e instanceof Error ? e.message : "Error");
+    } finally {
+      setUpdating(null);
+    }
+  };
 
   // Announcements CRUD
   const [showAnnounceDialog, setShowAnnounceDialog] = useState(false);
@@ -423,7 +529,17 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     }
     setSavingBiz(true);
     try {
-      const body: Record<string, unknown> = { ...newBiz, operating_hours: newBiz.openTime && newBiz.closeTime ? `${newBiz.openTime} — ${newBiz.closeTime}` : "" };
+      let photoUrl: string | null = null;
+      if (bizPhoto) {
+        const formData = new FormData();
+        formData.append("file", bizPhoto);
+        const uploadRes = await fetch("/api/upload-photo", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Photo upload failed");
+        photoUrl = uploadData.url;
+      }
+
+      const body: Record<string, unknown> = { ...newBiz, operating_hours: newBiz.openTime && newBiz.closeTime ? `${newBiz.openTime} — ${newBiz.closeTime}` : "", photo_url: photoUrl };
       body.latitude = newBiz.latitude ? parseFloat(newBiz.latitude) : null;
       body.longitude = newBiz.longitude ? parseFloat(newBiz.longitude) : null;
       const res = await fetch("/api/admin/directory", {
@@ -435,6 +551,9 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
       toastSuccess("Service added", `${newBiz.name} has been added to the directory.`);
       setShowAddBiz(false);
       setNewBiz({ name: "", category: "", address: "", barangay: "", contact: "", delivery_available: false, openTime: "", closeTime: "", latitude: "", longitude: "" });
+      setCoordDraft("");
+      setBizPhoto(null);
+      setBizPhotoPreview(null);
       router.refresh();
     } catch (err: unknown) {
       toastError("Failed to add", err instanceof Error ? err.message : "Something went wrong");
@@ -468,6 +587,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     announcements: totalAnnouncements > 0 ? `${totalAnnouncements}` : "",
     contacts: totalContacts > 0 ? `${totalContacts}` : "",
     bugs: bugReports.length ? `${bugReports.length}` : "",
+    chat: chatMessages.filter((m) => !m.deleted).length ? `${chatMessages.filter((m) => !m.deleted).length}` : "",
   };
 
   // Dashboard computations
@@ -1174,14 +1294,67 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                     </div>
                     <div className="space-y-1.5">
                       <Label>Map Location</Label>
+                      <Input
+                        placeholder='Or paste coordinates (e.g. 14.846927, 121.047377)'
+                        value={coordDraft}
+                        onChange={(e) => {
+                          setCoordDraft(e.target.value);
+                          const val = e.target.value.trim();
+                          const match = val.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+                          if (match) {
+                            const lat = parseFloat(match[1]);
+                            const lng = parseFloat(match[2]);
+                            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                              setNewBiz({ ...newBiz, latitude: String(lat), longitude: String(lng) });
+                            }
+                          }
+                        }}
+                        className="h-9 text-sm mb-1"
+                      />
                       <div className="h-[250px] rounded-lg border overflow-hidden">
                         <AdminLocationPicker
                           barangay={newBiz.barangay}
                           lat={newBiz.latitude ? parseFloat(newBiz.latitude) : null}
                           lng={newBiz.longitude ? parseFloat(newBiz.longitude) : null}
-                          onPin={(lat, lng) => setNewBiz({ ...newBiz, latitude: String(lat), longitude: String(lng) })}
+                          onPin={(lat, lng) => {
+                            setNewBiz({ ...newBiz, latitude: String(lat), longitude: String(lng) });
+                            setCoordDraft(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                          }}
                         />
                       </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Photo</Label>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="file"
+                          accept=".jpg,.jpeg,.png,.webp"
+                          className="h-9 text-sm flex-1"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setBizPhoto(file);
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => setBizPhotoPreview(reader.result as string);
+                              reader.readAsDataURL(file);
+                            } else {
+                              setBizPhotoPreview(null);
+                            }
+                          }}
+                        />
+                        {bizPhotoPreview && (
+                          <button
+                            type="button"
+                            onClick={() => { setBizPhoto(null); setBizPhotoPreview(null); }}
+                            className="text-xs text-muted-foreground hover:text-destructive shrink-0"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      {bizPhotoPreview && (
+                        <img src={bizPhotoPreview} alt="Preview" className="w-full h-32 object-cover rounded-lg border" />
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <input type="checkbox" id="delivery" checked={newBiz.delivery_available}
@@ -1441,6 +1614,190 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               </>
             )}
             <Pagination page={contactPage} total={totalContacts} pageSize={pageSize} onChange={(p) => navigate({ contactPage: String(p) })} />
+          </div>
+        )}
+
+        {tab === "chat" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Chat Moderation</h3>
+              <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
+                {(["all", "deleted", "reported", "blocked"] as const).map((st) => {
+                  const counts: Record<string, number> = {
+                    all: chatMessages.filter((m) => !m.deleted).length,
+                    deleted: chatMessages.filter((m) => m.deleted).length,
+                    reported: chatReports.length,
+                    blocked: chatBlocks.length,
+                  };
+                  return (
+                    <button key={st} onClick={() => setChatSubTab(st)}
+                      className={cn(
+                        "px-2.5 py-1.5 text-[10px] sm:text-xs font-medium rounded-md transition-all capitalize whitespace-nowrap",
+                        chatSubTab === st ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground",
+                      )}>
+                      {st} ({counts[st]})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            {loadingChat ? (
+              <div className="text-center py-12"><Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" /></div>
+            ) : chatSubTab === "blocked" ? (
+              /* ---- Blocked users ---- */
+              chatBlocks.length === 0 ? (
+                <div className="text-center py-12 text-xs text-muted-foreground">
+                  <Ban className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                  <p>No blocked users.</p>
+                </div>
+              ) : (
+                <div className="bg-muted/40 border rounded-xl overflow-x-auto">
+                  <table className="w-full text-xs min-w-[400px]">
+                    <thead>
+                      <tr className="border-b bg-muted/60">
+                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Author Hash</th>
+                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Notes</th>
+                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Blocked At</th>
+                        <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chatBlocks.map((b) => (
+                        <tr key={b.author_hash} className="border-b last:border-0">
+                          <td className="px-3 py-2.5 font-mono text-[10px] max-w-[160px] truncate">{b.author_hash}</td>
+                          <td className="px-3 py-2.5 max-w-[200px] truncate">{b.notes || "—"}</td>
+                          <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell whitespace-nowrap">{new Date(b.created_at).toLocaleString()}</td>
+                          <td className="px-3 py-2.5 text-right">
+                            <Button size="sm" variant="outline" className="h-7 text-[10px] gap-1"
+                              onClick={() => handleUnblockUser(b.author_hash)} disabled={updating === b.author_hash}>
+                              {updating === b.author_hash ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                              Unblock
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : chatSubTab === "reported" ? (
+              /* ---- Reported messages ---- */
+              chatReports.length === 0 ? (
+                <div className="text-center py-12 text-xs text-muted-foreground">
+                  <Flag className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                  <p>No reported messages.</p>
+                </div>
+              ) : (
+                <div className="bg-muted/40 border rounded-xl overflow-x-auto">
+                  <table className="w-full text-xs min-w-[500px]">
+                    <thead>
+                      <tr className="border-b bg-muted/60">
+                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Author</th>
+                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Author Hash</th>
+                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Reason</th>
+                        <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Date</th>
+                        <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Block</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {chatReports.slice().reverse().map((r) => {
+                        const isBlocked = chatBlocks.some((b) => b.author_hash === r.author_hash);
+                        return (
+                          <tr key={r.id} className="border-b last:border-0">
+                            <td className="px-3 py-2.5 max-w-[100px] truncate">{r.author_label || "Anonymous"}</td>
+                            <td className="px-3 py-2.5 font-mono text-[10px] max-w-[140px] truncate">{r.author_hash || "—"}</td>
+                            <td className="px-3 py-2.5 max-w-[200px] truncate">{r.reason || "—"}</td>
+                            <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</td>
+                            <td className="px-3 py-2.5 text-right">
+                              {isBlocked ? (
+                                <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-muted-foreground">Blocked</Badge>
+                              ) : r.author_hash ? (
+                                <Button size="sm" variant="destructive" className="h-7 text-[10px] gap-1"
+                                  onClick={() => handleBlockUser(r.author_hash, r.author_label || undefined)} disabled={updating === r.author_hash}>
+                                  {updating === r.author_hash ? <Loader2 className="h-3 w-3 animate-spin" /> : <Ban className="h-3 w-3" />}
+                                  Block
+                                </Button>
+                              ) : null}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )
+            ) : (
+              /* ---- All / Deleted messages ---- */
+              (() => {
+                const filtered = chatMessages.filter((m) => chatSubTab === "all" ? !m.deleted : m.deleted);
+                if (filtered.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-xs text-muted-foreground">
+                      <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground/40" />
+                      <p>No messages.</p>
+                    </div>
+                  );
+                }
+                return (
+                  <div className="bg-muted/40 border rounded-xl overflow-x-auto">
+                    <table className="w-full text-xs min-w-[600px]">
+                      <thead>
+                        <tr className="border-b bg-muted/60">
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">User</th>
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Hash</th>
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Barangay</th>
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Message</th>
+                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Date</th>
+                          <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filtered.map((m) => {
+                          const reportCount = reportedHashes.get(m.author_hash) || 0;
+                          const isBlocked = chatBlocks.some((b) => b.author_hash === m.author_hash);
+                          return (
+                            <tr key={m.id} className={cn("border-b last:border-0", reportCount > 0 && "bg-amber-50 dark:bg-amber-950/10")}>
+                              <td className="px-3 py-2.5 max-w-[100px] truncate">
+                                {m.author_label || "Anonymous"}
+                                {reportCount > 0 && <span className="ml-1 text-amber-600 font-bold" title={`${reportCount} report(s)`}>!{reportCount}</span>}
+                              </td>
+                              <td className="px-3 py-2.5 font-mono text-[10px] max-w-[120px] truncate text-muted-foreground">{m.author_hash}</td>
+                              <td className="px-3 py-2.5">{m.barangay || "—"}</td>
+                              <td className="px-3 py-2.5 max-w-xs truncate">{m.message}</td>
+                              <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell whitespace-nowrap">{new Date(m.created_at).toLocaleString()}</td>
+                              <td className="px-3 py-2.5 text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  {isBlocked ? (
+                                    <Button size="sm" variant="outline" className="h-7 text-[10px]"
+                                      onClick={() => handleUnblockUser(m.author_hash)} disabled={updating === m.author_hash}>
+                                      {updating === m.author_hash ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                                      Unblock
+                                    </Button>
+                                  ) : (
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive"
+                                      onClick={() => handleBlockUser(m.author_hash, m.author_label || undefined)} disabled={updating === m.author_hash}
+                                      title="Block user">
+                                      {updating === m.author_hash ? <Loader2 className="h-3 w-3 animate-spin" /> : <Ban className="h-3.5 w-3.5" />}
+                                    </Button>
+                                  )}
+                                  {!m.deleted && (
+                                    <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive"
+                                      onClick={() => handleDeleteChatMessage(m.id)} disabled={updating === m.id}>
+                                      {updating === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                                    </Button>
+                                  )}
+                                  {m.deleted && <Badge variant="outline" className="text-[9px] px-1.5 py-0 text-muted-foreground">Deleted</Badge>}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })()
+            )}
           </div>
         )}
 

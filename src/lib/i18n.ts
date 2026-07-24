@@ -603,6 +603,14 @@ export const dict: Record<string, Record<string, string>> = {
   "e.g. ₱500 — ₱1,000": { tl: "hal. ₱500 — ₱1,000" },
   "Drag the marker to your business location. The pin is constrained within the selected barangay.": { tl: "I-drag ang marker sa lokasyon ng iyong negosyo. Ang pin ay nakakulong sa loob ng napiling barangay." },
 
+  // Community chat extras
+  "Barangay (optional)": { tl: "Barangay (opsyonal)" },
+  "None": { tl: "Wala" },
+  "Block": { tl: "I-block" },
+  "Blocked": { tl: "Na-block" },
+  "Messages from this user are now hidden.": { tl: "Ang mga mensahe mula sa user na ito ay nakatago na." },
+  "Filter by barangay": { tl: "I-filter ayon sa barangay" },
+
   // Disclaimer page
   "Important:": { tl: "Mahalaga:" },
   " WaterWatch SJDM is an independent, community-built platform. We are not affiliated with Metro Pacific Bulacan Water (MPBW), the City Government of San Jose del Monte, or any government agency.": { tl: " Ang WaterWatch SJDM ay isang independent, community-built na plataporma. Hindi kami ka-affiliate ng Metro Pacific Bulacan Water (MPBW), ng Pamahalaang Lungsod ng San Jose del Monte, o ng kahit anong ahensya ng gobyerno." },
