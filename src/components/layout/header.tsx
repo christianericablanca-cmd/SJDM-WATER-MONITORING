@@ -22,7 +22,7 @@ const NAV_ITEMS = [
 
 export function Header() {
   const pathname = usePathname();
-  const { resolved, setTheme } = useTheme();
+  const { resolved, toggleTheme } = useTheme();
   const { lang, setLang } = useLanguage();
   const [showBugReport, setShowBugReport] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -86,7 +86,7 @@ export function Header() {
               </span>
             </button>
             <button
-              onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
+              onClick={toggleTheme}
               className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-secondary transition-colors"
               aria-label="Toggle theme"
             >
