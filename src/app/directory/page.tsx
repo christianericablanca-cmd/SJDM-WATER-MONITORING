@@ -3,7 +3,7 @@ import { t } from "@/lib/i18n";
 import { createServerSupabase } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
 import { BUSINESS_CATEGORIES } from "@/lib/constants";
-import { Phone, MapPin, CheckCircle2, Clock, PlusCircle, Droplets, Truck, WashingMachine } from "lucide-react";
+import { Phone, MapPin, CheckCircle2, Clock, PlusCircle, Droplets, Truck, Drum, WashingMachine } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn, formatDate } from "@/lib/utils";
 import type { Business } from "@/lib/types";
@@ -14,15 +14,15 @@ export const revalidate = 300;
 
 const CAT_ICONS: Record<string, typeof Droplets> = {
   water_refilling: Droplets,
-  mineral_water_delivery: Truck,
   water_tanker: Truck,
+  water_storage: Drum,
   laundry_services: WashingMachine,
 };
 
 const CAT_COLORS: Record<string, string> = {
   water_refilling: "text-blue-500 bg-blue-50 dark:bg-blue-950/20",
-  mineral_water_delivery: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20",
   water_tanker: "text-orange-500 bg-orange-50 dark:bg-orange-950/20",
+  water_storage: "text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20",
   laundry_services: "text-purple-500 bg-purple-50 dark:bg-purple-950/20",
 };
 

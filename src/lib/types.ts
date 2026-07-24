@@ -106,8 +106,8 @@ export interface Business {
 
 export type BusinessCategory =
   | "water_refilling"
-  | "mineral_water_delivery"
   | "water_tanker"
+  | "water_storage"
   | "laundry_services";
 
 export interface Announcement {

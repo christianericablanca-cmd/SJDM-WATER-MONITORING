@@ -48,21 +48,37 @@ function createReportIcon(color: string): L.DivIcon | null {
   });
 }
 
-function createBusinessIcon(): L.DivIcon | null {
+const CATEGORY_COLORS: Record<string, string> = {
+  water_refilling: "#3b82f6",
+  water_tanker: "#f97316",
+  water_storage: "#10b981",
+  laundry_services: "#a855f7",
+};
+
+const CATEGORY_SVG: Record<string, string> = {
+  water_refilling: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+  water_tanker: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H4v12h1"/><path d="M14 9h4l3 3v5h-1"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
+  water_storage: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c0 1.1 4.5 2 10 2s10-.9 10-2"/><path d="M2 8v8c0 1.1 4.5 2 10 2s10-.9 10-2V8"/><path d="M2 12c0 1.1 4.5 2 10 2s10-.9 10-2"/></svg>`,
+  laundry_services: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="11" r="3"/><circle cx="9" cy="7" r="1"/></svg>`,
+};
+
+function createBusinessIcon(category: string): L.DivIcon | null {
   if (typeof window === "undefined") return null;
+  const color = CATEGORY_COLORS[category] || "#6b7280";
+  const svg = CATEGORY_SVG[category] || "";
   return new L.DivIcon({
     className: "custom-marker",
-    html: `<div style="width:22px;height:22px;border-radius:4px;background:#059669;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;color:white;font-size:13px;font-weight:bold;">🏪</div>`,
-    iconSize: [22, 22],
-    iconAnchor: [11, 11],
-    popupAnchor: [0, -16],
+    html: `<div style="width:24px;height:24px;border-radius:5px;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;padding:3px;">${svg}</div>`,
+    iconSize: [24, 24],
+    iconAnchor: [12, 12],
+    popupAnchor: [0, -18],
   });
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  water_refilling: "Water Refilling",
-  mineral_water_delivery: "Mineral Water Delivery",
+  water_refilling: "Water Refilling & Delivery",
   water_tanker: "Water Tanker",
+  water_storage: "Water Storage",
   laundry_services: "Laundry",
 };
 
@@ -85,7 +101,12 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
   onBusinessPhotoClick: (business: Business) => void;
 }) {
   const mapRef = useRef<L.Map | null>(null);
-  const bizIcon = useMemo(() => createBusinessIcon(), []);
+  const bizIcons = useMemo(() => {
+    const cats = ["water_refilling", "water_tanker", "water_storage", "laundry_services"];
+    const map: Record<string, L.DivIcon | null> = {};
+    for (const c of cats) map[c] = createBusinessIcon(c);
+    return map;
+  }, []);
   const damIcon = useMemo(() => {
     if (typeof window === "undefined") return null;
     return new L.DivIcon({
@@ -189,7 +210,9 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
           </Marker>
         );
       })}
-      {showBusinesses && bizIcon && businessesWithCoords.map((biz) => (
+      {showBusinesses && businessesWithCoords.map((biz) => {
+        const bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
+        return bizIcon && (
         <Marker key={biz.id} position={[biz.latitude!, biz.longitude!]} icon={bizIcon}>
           <Popup>
             <div className="space-y-1.5 min-w-[190px] max-w-[250px]">
@@ -227,7 +250,8 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
             </div>
           </Popup>
         </Marker>
-      ))}
+        );
+      })}
     </MapContainer>
   );
 });

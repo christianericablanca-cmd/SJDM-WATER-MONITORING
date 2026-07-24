@@ -64,9 +64,9 @@ export const PROVIDER_CODE: Record<WaterProvider, string> = {
 };
 
 export const BUSINESS_CATEGORIES: { value: BusinessCategory; label: string }[] = [
-  { value: "water_refilling", label: "Water Refilling Stations" },
-  { value: "mineral_water_delivery", label: "Mineral Water Delivery" },
+  { value: "water_refilling", label: "Water Refilling & Delivery" },
   { value: "water_tanker", label: "Private Water Tanker Services" },
+  { value: "water_storage", label: "Water Storages" },
   { value: "laundry_services", label: "Laundry Services" },
 ];
 
