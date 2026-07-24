@@ -402,7 +402,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
 
   useEffect(() => {
     if (liveCount > 0) {
-      const timer = setTimeout(() => setLiveCount(0), 4000);
+      const timer = setTimeout(() => setLiveCount(0), 10000);
       return () => clearTimeout(timer);
     }
   }, [liveCount]);
@@ -476,11 +476,10 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
           }
         }
         knownIdsRef.current = newIds;
-        const totalChanges = added + updated;
-        if (totalChanges > 0) setLiveCount((c) => c + totalChanges);
+        if (added > 0) setLiveCount((c) => c + added);
       } catch {
       }
-    }, 15000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -567,12 +566,6 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
           <MapPin className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-water shrink-0" />
           <span className="font-medium tabular-nums">{filteredReports.length}</span>
           <span className="text-muted-foreground hidden sm:inline">{t("of", lang)} {liveReports.length} {t("reports", lang)}</span>
-          {liveCount > 0 && (
-            <span className="flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 animate-pulse">
-              <RefreshCw className="h-3 w-3" />
-              +{liveCount} new
-            </span>
-          )}
           <span className="flex items-center gap-1 text-[9px] text-muted-foreground">
             <RefreshCw className="h-2.5 w-2.5" />
             live
@@ -690,7 +683,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
             >
               <Store className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Services</span>
-              <span className="tabular-nums">{filteredReports.length}</span>
+              {liveCount > 0 ? <span className="tabular-nums text-emerald-600 dark:text-emerald-400">+{liveCount}</span> : <span className="tabular-nums">{filteredReports.length}</span>}
             </button>
           </div>
       </div>
