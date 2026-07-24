@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast-provider";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { Send, Flag, Ban } from "lucide-react";
 import { BARANGAYS } from "@/lib/constants";
 
@@ -24,6 +26,8 @@ type ChatMessage = {
 };
 
 const BLOCKED_KEY = "chat_blocked_hashes";
+const BLOCK_NOTES_KEY = "chat_block_notes";
+const MY_HASH_KEY = "chat_my_hash";
 
 function getBlocked(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -35,10 +39,28 @@ function getBlocked(): Set<string> {
   }
 }
 
-function addBlocked(hash: string) {
+function getBlockNote(hash: string): string {
+  try {
+    const raw = localStorage.getItem(BLOCK_NOTES_KEY);
+    const notes = raw ? JSON.parse(raw) : {};
+    return notes[hash] || "";
+  } catch {
+    return "";
+  }
+}
+
+function addBlocked(hash: string, note?: string) {
   const blocked = getBlocked();
   blocked.add(hash);
   localStorage.setItem(BLOCKED_KEY, JSON.stringify([...blocked]));
+  if (note) {
+    try {
+      const raw = localStorage.getItem(BLOCK_NOTES_KEY);
+      const notes = raw ? JSON.parse(raw) : {};
+      notes[hash] = note;
+      localStorage.setItem(BLOCK_NOTES_KEY, JSON.stringify(notes));
+    } catch { /* ignore */ }
+  }
 }
 
 export function CommunityContent({ initialMessages }: { initialMessages: ChatMessage[] }) {
@@ -51,6 +73,11 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   const [selectedBarangay, setSelectedBarangay] = useState("");
   const [barangayFilter, setBarangayFilter] = useState("all");
   const [blocked, setBlocked] = useState<Set<string>>(getBlocked);
+  const [myHash, setMyHash] = useState<string | null>(
+    typeof window === "undefined" ? null : localStorage.getItem(MY_HASH_KEY),
+  );
+  const [blockTarget, setBlockTarget] = useState<string | null>(null);
+  const [blockNote, setBlockNote] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
 
   const room = "sjdm";
@@ -108,6 +135,11 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
+      if (!myHash && data.message?.author_hash) {
+        const hash = data.message.author_hash;
+        setMyHash(hash);
+        localStorage.setItem(MY_HASH_KEY, hash);
+      }
       setDraft("");
       toast.success(t("Sent", lang), t("Message posted.", lang));
     } catch (e) {
@@ -134,9 +166,22 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   };
 
   const blockUser = (hash: string) => {
-    addBlocked(hash);
+    setBlockTarget(hash);
+    setBlockNote(getBlockNote(hash));
+  };
+
+  const confirmBlock = () => {
+    if (!blockTarget) return;
+    addBlocked(blockTarget, blockNote || undefined);
     setBlocked(getBlocked());
+    setBlockTarget(null);
+    setBlockNote("");
     toast.info(t("Blocked", lang), t("Messages from this user are now hidden.", lang));
+  };
+
+  const cancelBlock = () => {
+    setBlockTarget(null);
+    setBlockNote("");
   };
 
   const barangaysWithMsgs = useMemo(() => {
@@ -197,45 +242,55 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
           {sorted.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-12">{t("No messages yet.", lang)}</div>
           ) : (
-            sorted.map((m) => (
-              <div key={m.id} className="rounded-lg border bg-background p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="text-[11px] text-muted-foreground">
-                        {(m.author_label || t("Anonymous", lang))} · {new Date(m.created_at).toLocaleString()}
-                      </span>
-                      {m.barangay && (
-                        <span className="text-[9px] bg-water/10 text-water px-1.5 py-0.5 rounded-full font-medium">{m.barangay}</span>
-                      )}
+            sorted.map((m) => {
+              const isMine = m.author_hash === myHash;
+              return (
+              <div key={m.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
+                <div className={cn(
+                  "rounded-lg p-3 max-w-[85%] sm:max-w-[75%]",
+                  isMine ? "bg-water/15 border border-water/20" : "bg-background border",
+                )}>
+                  <div className={cn("flex items-start gap-3", isMine ? "flex-row-reverse" : "")}>
+                    <div className="min-w-0 flex-1">
+                      <div className={cn("flex items-center gap-1.5 flex-wrap", isMine && "justify-end")}>
+                        <span className="text-[11px] text-muted-foreground">
+                          {isMine ? t("You", lang) : (m.author_label || t("Anonymous", lang))} · {new Date(m.created_at).toLocaleString()}
+                        </span>
+                        {m.barangay && (
+                          <span className="text-[9px] bg-water/10 text-water px-1.5 py-0.5 rounded-full font-medium">{m.barangay}</span>
+                        )}
+                      </div>
+                      <div className={cn("text-sm whitespace-pre-wrap break-words", isMine && "text-right")}>{m.message}</div>
                     </div>
-                    <div className="text-sm whitespace-pre-wrap break-words">{m.message}</div>
-                  </div>
-                  <div className="flex items-center gap-0.5 shrink-0">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => blockUser(m.author_hash)}
-                      title={t("Block", lang)}
-                    >
-                      <Ban className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => reportMessage(m.id)}
-                      title={t("Report", lang)}
-                    >
-                      <Flag className="h-3.5 w-3.5" />
-                    </Button>
+                    {!isMine && (
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => blockUser(m.author_hash)}
+                          title={t("Block", lang)}
+                        >
+                          <Ban className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => reportMessage(m.id)}
+                          title={t("Report", lang)}
+                        >
+                          <Flag className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-            ))
+              );
+            })
           )}
         </div>
 
@@ -258,6 +313,29 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
           </Button>
         </div>
       </Card>
+
+      <Dialog open={blockTarget !== null} onOpenChange={(open) => { if (!open) cancelBlock(); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-base">{t("Block this user?", lang)}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t("Their messages will be hidden from your view. They won't know you blocked them.", lang)}
+          </p>
+          <Input
+            value={blockNote}
+            onChange={(e) => setBlockNote(e.target.value)}
+            placeholder={t("Reason (optional, only visible to you)", lang)}
+            className="h-9 text-sm"
+          />
+          <div className="flex justify-end gap-2 pt-1">
+            <Button size="sm" variant="outline" onClick={cancelBlock}>{t("Cancel", lang)}</Button>
+            <Button size="sm" variant="destructive" onClick={confirmBlock} className="gap-1.5">
+              <Ban className="h-3.5 w-3.5" /> {t("Block", lang)}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

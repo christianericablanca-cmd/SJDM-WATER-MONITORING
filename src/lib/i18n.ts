@@ -610,6 +610,12 @@ export const dict: Record<string, Record<string, string>> = {
   "Blocked": { tl: "Na-block" },
   "Messages from this user are now hidden.": { tl: "Ang mga mensahe mula sa user na ito ay nakatago na." },
   "Filter by barangay": { tl: "I-filter ayon sa barangay" },
+  You: { tl: "Ikaw" },
+  "Block this user?": { tl: "I-block ang user na ito?" },
+  "Their messages will be hidden from your view. They won't know you blocked them.":
+    { tl: "Itatago ang kanilang mga mensahe sa iyong view. Hindi nila malalaman na ni-block mo sila." },
+  "Reason (optional, only visible to you)": { tl: "Dahilan (opsyonal, ikaw lang ang makakakita)" },
+  Cancel: { tl: "Kanselahin" },
 
   // Disclaimer page
   "Important:": { tl: "Mahalaga:" },
