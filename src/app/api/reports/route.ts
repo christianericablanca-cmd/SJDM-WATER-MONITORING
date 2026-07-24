@@ -54,6 +54,24 @@ export async function POST(request: Request) {
     );
   }
 
+  // Verify Turnstile captcha if site key is configured
+  const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
+  if (TURNSTILE_SECRET) {
+    const token = body.captcha_token;
+    if (!token) {
+      return NextResponse.json({ error: "Captcha verification required" }, { status: 400 });
+    }
+    const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: TURNSTILE_SECRET, response: token }),
+    });
+    const verifyData = await verifyRes.json();
+    if (!verifyData.success) {
+      return NextResponse.json({ error: "Captcha verification failed. Please try again." }, { status: 403 });
+    }
+  }
+
   if (!body.barangay || !body.issue_type || !body.started_at) {
     return NextResponse.json(
       { error: "Missing required fields: barangay, issue_type, started_at" },

@@ -206,6 +206,7 @@ export function ReportForm() {
           photo_url: photoUrl,
           started_at: startedAt,
           street_sitio: street || null,
+          captcha_token: captchaToken,
         }),
       });
 
