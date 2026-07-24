@@ -48,7 +48,7 @@ interface Props {
   announcements: Announcement[];
   pendingCount: number;
   allClaims: BusinessClaim[];
-  bugReports: { id: string; description: string; contact: string | null; page: string | null; created_at: string; resolved: boolean }[];
+  bugReports: { id: string; description: string; page: string | null; created_at: string; resolved: boolean }[];
   totalReports: number;
   staleCount: number;
   totalBusinesses: number;
@@ -1491,7 +1491,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                           )}
                         </div>
                         <div className="flex items-center justify-between text-[8px] text-muted-foreground">
-                          <span>{bug.page || "—"} · {bug.contact || "—"}</span>
+                          <span>{bug.page || "—"}</span>
                           <span>{new Date(bug.created_at).toLocaleDateString()}</span>
                         </div>
                       </div>
@@ -1504,7 +1504,6 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                         <tr className="border-b bg-muted/60">
                           <th className="text-left px-3 py-2.5 font-medium text-muted-foreground">Description</th>
                           <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Page</th>
-                          <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Contact</th>
                           <th className="text-left px-3 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Date</th>
                           <th className="text-right px-3 py-2.5 font-medium text-muted-foreground">Status</th>
                         </tr>
@@ -1514,7 +1513,6 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                           <tr key={bug.id} className="border-b last:border-0">
                             <td className="px-3 py-2.5 max-w-xs truncate">{bug.description}</td>
                             <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell max-w-[120px] truncate">{bug.page || "—"}</td>
-                            <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell max-w-[140px] truncate">{bug.contact || "—"}</td>
                             <td className="px-3 py-2.5 text-muted-foreground hidden md:table-cell whitespace-nowrap">{new Date(bug.created_at).toLocaleDateString()}</td>
                             <td className="px-3 py-2.5 text-right">
                               {bug.resolved ? (

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { Bug, X, Send, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/toast-provider";
@@ -13,7 +12,6 @@ import { usePathname } from "next/navigation";
 
 export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [description, setDescription] = useState("");
-  const [contact, setContact] = useState("");
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [formError, setFormError] = useState("");
@@ -32,7 +30,7 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
       const res = await fetch("/api/bug-reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: description.trim(), contact: contact.trim(), page: pathname }),
+        body: JSON.stringify({ description: description.trim(), page: pathname }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Something went wrong");
@@ -47,7 +45,7 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => { setSent(false); setDescription(""); setContact(""); setFormError(""); }, 200);
+    setTimeout(() => { setSent(false); setDescription(""); setFormError(""); }, 200);
   };
 
   if (!open) return null;
@@ -90,15 +88,6 @@ export function BugReportDialog({ open, onClose }: { open: boolean; onClose: () 
                 placeholder={t("What went wrong? What did you expect to happen?", lang)}
                 rows={4}
                 className="resize-none text-sm"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs">{t("Contact", lang)} <span className="text-muted-foreground">{t("(optional)", lang)}</span></Label>
-              <Input
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                placeholder={t("Email or FB Messenger — if you'd like a follow-up", lang)}
-                className="h-9 text-sm"
               />
             </div>
             {formError && (

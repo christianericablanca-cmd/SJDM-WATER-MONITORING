@@ -7,7 +7,6 @@ export async function POST(request: Request) {
   const supabase = createServiceClient();
   const body = await request.json();
   const description = sanitizeString(body.description, 2000);
-  const contact = sanitizeString(body.contact || "", 200);
   const page = sanitizeString(body.page || "", 200);
 
   if (!description || description.length < 10) {
@@ -22,7 +21,6 @@ export async function POST(request: Request) {
 
   const { error } = await supabase.from("bug_reports").insert({
     description,
-    contact: contact || null,
     page: page || null,
     identifier,
   });
