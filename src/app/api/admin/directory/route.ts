@@ -11,10 +11,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (request.headers.get("x-requested-with") !== "XMLHttpRequest") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const body = await request.json();
   const { name, category, address, barangay, contact, delivery_available, operating_hours, latitude, longitude } = body;
 
