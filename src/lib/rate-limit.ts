@@ -59,7 +59,7 @@ export function getClientIdentifier(request: Request): string {
     hash = ((hash << 5) - hash) + char;
     hash |= 0;
   }
-  return hash.toString(36);
+  return (hash >>> 0).toString(36);
 }
 
 export function generateSessionId(): string {
