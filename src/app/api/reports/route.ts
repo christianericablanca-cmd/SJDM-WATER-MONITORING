@@ -42,13 +42,25 @@ export async function POST(request: Request) {
 
   const identifier = getClientIdentifier(request);
 
-  const { allowed, remaining } = await checkRateLimit(identifier);
-  if (!allowed) {
+  const { allowed: hourlyOk } = await checkRateLimit(identifier, "submit_report", 1, 60);
+  if (!hourlyOk) {
     return NextResponse.json(
       {
-        error: "Rate limit exceeded. Maximum 3 reports per hour. Please try again later.",
+        error: "Rate limit exceeded. Maximum 1 report per hour. Please try again later.",
         remaining: 0,
         retryAfter: "1 hour",
+      },
+      { status: 429 },
+    );
+  }
+
+  const { allowed: dailyOk } = await checkRateLimit(identifier, "submit_report_daily", 3, 1440);
+  if (!dailyOk) {
+    return NextResponse.json(
+      {
+        error: "Daily limit reached. Maximum 3 reports per day. Please try again tomorrow.",
+        remaining: 0,
+        retryAfter: "24 hours",
       },
       { status: 429 },
     );
@@ -189,6 +201,7 @@ export async function POST(request: Request) {
   }
 
   await recordRateLimit(identifier);
+  await recordRateLimit(identifier, "submit_report_daily");
 
   const webhookUrl = process.env.ADMIN_NOTIFICATION_WEBHOOK;
   if (webhookUrl) {
@@ -210,7 +223,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json(
-    { report_id_display: report.report_id_display, remaining: remaining - 1 },
+    { report_id_display: report.report_id_display },
     { status: 201 },
   );
 }
