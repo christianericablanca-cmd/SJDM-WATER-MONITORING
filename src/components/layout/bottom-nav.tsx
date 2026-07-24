@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, Store, Droplets, Phone, Megaphone } from "lucide-react";
+import { MapPin, Store, Droplets, Phone, Megaphone, MessageSquareText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { key: "map", label: "Water Map", href: "/map", icon: MapPin },
   { key: "directory", label: "Services", href: "/directory", icon: Store },
   { key: "report", label: "Submit Report", href: "/report", icon: Droplets },
+  { key: "community", label: "Community", href: "/community", icon: MessageSquareText },
   { key: "emergency", label: "Emergency", href: "/emergency", icon: Phone },
   { key: "announcements", label: "Announcements", href: "/announcements", icon: Megaphone },
 ];

@@ -16,6 +16,7 @@ const NAV_ITEMS = [
   { label: "Water Map", href: "/map" },
   { label: "Submit Report", href: "/report" },
   { label: "Services", href: "/directory" },
+  { label: "Community", href: "/community" },
   { label: "Emergency", href: "/emergency" },
   { label: "Announcements", href: "/announcements" },
 ];

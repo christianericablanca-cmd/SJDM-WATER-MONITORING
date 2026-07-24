@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { key: "Water Map", href: "/map" },
   { key: "Submit Report", href: "/report" },
   { key: "Services", href: "/directory" },
+  { key: "Community", href: "/community" },
   { key: "Emergency", href: "/emergency" },
   { key: "Announcements", href: "/announcements" },
   { key: "How to Use", href: "/how-to-use" },
