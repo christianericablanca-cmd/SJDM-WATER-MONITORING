@@ -85,6 +85,22 @@ export default async function MapPage() {
       <WaterMap reports={reports ?? []} businesses={businesses ?? []} />
       <DamLevelWidget />
 
+      <Card className="p-3 sm:p-4 shadow-card">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] sm:text-xs text-muted-foreground">
+          {ISSUE_TYPES.map((issue) => (
+            <div key={issue.value} className="flex items-center gap-1.5">
+              <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: MARKER_COLORS[issue.value] }} />
+              {issue.label}
+            </div>
+          ))}
+          <span className="text-muted-foreground/40 select-none shrink-0">|</span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm">💧</span>
+            Angat Dam
+          </div>
+        </div>
+      </Card>
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {([
           { label: t("Active Issues", lang), value: activeReports.length, icon: ClipboardList, color: "text-water", bg: "bg-water-muted" },
