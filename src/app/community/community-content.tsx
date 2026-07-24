@@ -172,9 +172,6 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       if (data.message) {
         setMessages((prev) => (prev.some((p) => p.id === data.message.id) ? prev : [...prev, data.message]));
         setMyIds((prev) => new Set(prev).add(data.message.id));
-        setTimeout(() => {
-          if (bottomRef.current) bottomRef.current.scrollIntoView();
-        }, 0);
       }
       setDraft("");
     } catch (e) {
