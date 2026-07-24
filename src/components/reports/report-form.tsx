@@ -213,8 +213,11 @@ export function ReportForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        if (res.status === 429) {
-          toastError(t("Rate limit reached", lang), t("Maximum 3 reports per hour. Please try again later.", lang));
+        if (res.status === 409) {
+          const data = await res.json();
+          toastError(t("Active report found", lang), t("You already have a report being reviewed. Track it using ID:", lang) + " " + data.existing_report_id);
+        } else if (res.status === 429) {
+          toastError(t("Rate limit reached", lang), t("Maximum 1 report per hour. Please try again later.", lang));
         } else {
           throw new Error(data.error || "Something went wrong");
         }

@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { generateReportId } from "@/lib/utils";
 import type { WaterProvider } from "@/lib/types";
-import { checkRateLimit, recordRateLimit, getClientIdentifier } from "@/lib/rate-limit";
+import { getClientIdentifier } from "@/lib/rate-limit";
 import { sanitizeString, sanitizeHtml, isValidLat, isValidLng, isValidEnum, toSafeNumber } from "@/lib/sanitize";
 import { BARANGAYS, ISSUE_TYPES, WATER_PROVIDERS, BOUNDARIES_SJDM } from "@/lib/constants";
 
@@ -42,27 +42,21 @@ export async function POST(request: Request) {
 
   const identifier = getClientIdentifier(request);
 
-  const { allowed: hourlyOk } = await checkRateLimit(identifier, "submit_report", 1, 60);
-  if (!hourlyOk) {
-    return NextResponse.json(
-      {
-        error: "Rate limit exceeded. Maximum 1 report per hour. Please try again later.",
-        remaining: 0,
-        retryAfter: "1 hour",
-      },
-      { status: 429 },
-    );
-  }
+  // Check if this fingerprint already has an active report
+  const { data: activeReport } = await supabase
+    .from("reports")
+    .select("report_id_display, status")
+    .eq("submitted_by_fingerprint", identifier)
+    .in("status", ["submitted", "under_review", "approved"])
+    .maybeSingle();
 
-  const { allowed: dailyOk } = await checkRateLimit(identifier, "submit_report_daily", 3, 1440);
-  if (!dailyOk) {
+  if (activeReport) {
     return NextResponse.json(
       {
-        error: "Daily limit reached. Maximum 3 reports per day. Please try again tomorrow.",
-        remaining: 0,
-        retryAfter: "24 hours",
+        error: "You already have a report being reviewed.",
+        existing_report_id: activeReport.report_id_display,
       },
-      { status: 429 },
+      { status: 409 },
     );
   }
 
@@ -189,6 +183,7 @@ export async function POST(request: Request) {
         street_sitio: streetSitio,
         water_provider: waterProvider,
         report_id_display: reportId,
+        submitted_by_fingerprint: identifier,
         status: "submitted",
       })
       .select()
@@ -199,9 +194,6 @@ export async function POST(request: Request) {
     }
     report = inserted;
   }
-
-  await recordRateLimit(identifier);
-  await recordRateLimit(identifier, "submit_report_daily");
 
   const webhookUrl = process.env.ADMIN_NOTIFICATION_WEBHOOK;
   if (webhookUrl) {
