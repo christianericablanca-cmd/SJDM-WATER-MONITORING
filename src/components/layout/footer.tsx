@@ -11,7 +11,7 @@ const NAV_LINKS = [
   { key: "Services", href: "/directory" },
   { key: "Emergency", href: "/emergency" },
   { key: "Announcements", href: "/announcements" },
-  { key: "How to Use", href: "#", action: "howto" },
+  { key: "How to Use", href: "/how-to-use" },
   { key: "Privacy", href: "/privacy" },
   { key: "Terms", href: "/terms" },
   { key: "Disclaimer", href: "/disclaimer" },
@@ -37,15 +37,9 @@ export function Footer() {
             {NAV_LINKS.map((link, i) => (
               <span key={link.key} className="flex items-center gap-4">
                 {i > 0 && <span className="w-px h-3 bg-border hidden sm:block" />}
-                {link.action === "howto" ? (
-                  <Link href="/disclaimer" className="hover:text-water transition-colors">
-                    {t(link.key, lang)}
-                  </Link>
-                ) : (
                   <Link href={link.href} className="hover:text-water transition-colors">
                     {t(link.key, lang)}
                   </Link>
-                )}
               </span>
             ))}
           </nav>
