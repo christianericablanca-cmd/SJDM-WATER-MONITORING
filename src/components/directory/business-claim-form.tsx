@@ -432,7 +432,7 @@ export function BusinessClaimForm() {
       </Card>
 
       <div className="flex justify-between gap-3">
-        <Button variant="outline" onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} className="gap-1.5">
+        <Button variant="outline" onClick={() => { setStep(Math.max(0, step - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }} disabled={step === 0} className="gap-1.5">
           <ArrowLeft className="h-3.5 w-3.5" /> {t("Back", lang)}
         </Button>
         {step < 2 ? (
