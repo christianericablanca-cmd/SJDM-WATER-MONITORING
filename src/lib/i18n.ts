@@ -611,6 +611,12 @@ export const dict: Record<string, Record<string, string>> = {
   "New messages": { tl: "Mga bagong mensahe" },
   "Be the first to say something about the water situation in SJDM.":
     { tl: "Ikaw ang maunang magsabi tungkol sa sitwasyon ng tubig sa SJDM." },
+  "Be the first to say something.": { tl: "Ikaw ang maunang magsalita." },
+  Message: { tl: "Mensahe" },
+  All: { tl: "Lahat" },
+  "Reason (optional)": { tl: "Dahilan (opsyonal)" },
+  "Their messages will be hidden from your view.":
+    { tl: "Itatago ang kanilang mga mensahe sa iyong view." },
 
   // Community chat extras
   "Barangay (optional)": { tl: "Barangay (opsyonal)" },
