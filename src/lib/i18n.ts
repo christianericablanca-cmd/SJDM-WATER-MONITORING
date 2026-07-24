@@ -603,6 +603,15 @@ export const dict: Record<string, Record<string, string>> = {
   "e.g. ₱500 — ₱1,000": { tl: "hal. ₱500 — ₱1,000" },
   "Drag the marker to your business location. The pin is constrained within the selected barangay.": { tl: "I-drag ang marker sa lokasyon ng iyong negosyo. Ang pin ay nakakulong sa loob ng napiling barangay." },
 
+  // Chat redesign
+  "Community Chat": { tl: "Chat ng Komunidad" },
+  "Profile": { tl: "Profile" },
+  "Nickname": { tl: "Palayaw" },
+  "Filter": { tl: "Salain" },
+  "New messages": { tl: "Mga bagong mensahe" },
+  "Be the first to say something about the water situation in SJDM.":
+    { tl: "Ikaw ang maunang magsabi tungkol sa sitwasyon ng tubig sa SJDM." },
+
   // Community chat extras
   "Barangay (optional)": { tl: "Barangay (opsyonal)" },
   "None": { tl: "Wala" },
