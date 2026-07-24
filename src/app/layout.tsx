@@ -10,6 +10,7 @@ import { NetworkStatus } from "@/components/ui/network-status";
 import { PwaRegister } from "@/components/ui/pwa-register";
 import { DisclaimPopover } from "@/components/layout/disclaim-popover";
 import { BugReportButton } from "@/components/ui/bug-report-button";
+import { FingerprintInit } from "@/components/fingerprint-init";
 
 export const metadata: Metadata = {
   title: "WaterWatch SJDM — Community Water Monitoring",
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <DisclaimPopover />
           <BugReportButton />
           <PwaRegister />
+          <FingerprintInit />
         </ToastNotificationProvider>
         </LanguageProvider>
         </ThemeProvider>

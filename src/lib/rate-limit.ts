@@ -42,11 +42,11 @@ export function getClientIdentifier(request: Request): string {
   const cookieHeader = request.headers.get("cookie") || "";
   const sessionMatch = cookieHeader.match(/session_id=([^;]+)/);
   const sessionId = sessionMatch?.[1] || "unknown";
+  const canvasFp = cookieHeader.match(/ww_cf=([^;]+)/)?.[1] || "none";
 
-  // Fingerprint: combine IP + User-Agent + session cookie.
-  // IP + UA is stable across cookie clears; session adds entropy.
-  // Hash the raw string to keep stored identifiers compact.
-  const raw = `${ip}|${userAgent}|${sessionId}`;
+  // Fingerprint: combine IP + User-Agent + session cookie + canvas fingerprint.
+  // Canvas fingerprint stays the same across browser/incognito switches on same device.
+  const raw = `${ip}|${userAgent}|${sessionId}|${canvasFp}`;
   let hash = 0;
   for (let i = 0; i < raw.length; i++) {
     const char = raw.charCodeAt(i);
