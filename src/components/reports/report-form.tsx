@@ -160,7 +160,7 @@ export function ReportForm() {
     }
     setErrors({});
     setStep((s) => s + 1);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
   };
 
   const handleSubmit = async () => {
@@ -561,7 +561,7 @@ export function ReportForm() {
       </Card>
 
       <div className="flex justify-between gap-3 mt-4">
-        <Button variant="outline" onClick={() => { setStep(Math.max(0, step - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+        <Button variant="outline" onClick={() => { setStep(Math.max(0, step - 1)); requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" })); }}
           disabled={step === 0} className="gap-1.5">
           <ArrowLeft className="h-3.5 w-3.5" /> {t("Back", lang)}
         </Button>
