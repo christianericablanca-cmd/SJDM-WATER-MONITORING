@@ -123,6 +123,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   const [showFilter, setShowFilter] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollPosRef = useRef(0);
 
   const room = "sjdm";
 
@@ -134,6 +135,14 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
     msgs = msgs.filter((m) => !blocked.has(m.author_hash));
     return msgs;
   }, [messages, barangayFilter, blocked]);
+
+  // Scroll to bottom on first load
+  useEffect(() => {
+    if (sorted.length === 0) return;
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, []);
 
   // Realtime
   useEffect(() => {
@@ -163,6 +172,10 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       if (!res.ok) throw new Error(data.error || "Failed to send");
       if (data.message?.id) setMyIds((prev) => new Set(prev).add(data.message.id));
       setDraft("");
+      // Restore scroll position after mobile keyboard closes
+      setTimeout(() => {
+        if (listRef.current) listRef.current.scrollTop = scrollPosRef.current;
+      }, 150);
     } catch (e) {
       toast.error(t("Failed", lang), e instanceof Error ? e.message : t("Something went wrong", lang));
     } finally {
@@ -256,7 +269,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
         </div>
 
         {/* Messages */}
-        <div ref={listRef} className="max-h-[55dvh] min-h-[300px] overflow-y-auto p-3 space-y-0.5 bg-muted/10">
+        <div ref={listRef} className="max-h-[55dvh] min-h-[300px] overflow-y-auto p-3 space-y-0.5 bg-muted/10" style={{ overflowAnchor: "none" }}>
           {sorted.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8 py-16">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -329,7 +342,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
         {/* Input bar */}
         <div className="border-t px-3 py-2.5">
           <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="flex items-end gap-2">
-            <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
+            <Input value={draft} onChange={(e) => setDraft(e.target.value)} onFocus={() => { if (listRef.current) scrollPosRef.current = listRef.current.scrollTop; }} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
             <Button type="submit" disabled={sending || !draft.trim()} className="h-10 w-10 rounded-xl shrink-0" size="icon"><Send className="h-4 w-4" /></Button>
           </form>
         </div>
