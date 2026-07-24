@@ -22,6 +22,16 @@ export default async function ReportPage() {
         </div>
 
         <div className="max-w-xl mx-auto space-y-6">
+          <div className="flex items-start gap-2.5 p-3.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-200">
+            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+            <div>
+              <strong>{t("Reporting Rules", lang)}:</strong>{" "}
+              {t("Reports must be truthful. Do not submit malicious information or upload private information about other people. False reports may be removed.", lang)}
+            </div>
+          </div>
+
+          <ReportForm />
+
           <Card className="shadow-card border-border/60">
             <CardHeader>
               <div className="flex items-center gap-2.5">
@@ -40,16 +50,6 @@ export default async function ReportPage() {
               <TrackReportLookup />
             </CardContent>
           </Card>
-
-          <div className="flex items-start gap-2.5 p-3.5 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800 rounded-xl text-xs text-blue-800 dark:text-blue-200">
-            <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-            <div>
-              <strong>{t("Reporting Rules", lang)}:</strong>{" "}
-              {t("Reports must be truthful. Do not submit malicious information or upload private information about other people. False reports may be removed.", lang)}
-            </div>
-          </div>
-
-          <ReportForm />
         </div>
       </div>
     </div>

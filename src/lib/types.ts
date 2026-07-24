@@ -60,7 +60,7 @@ export type ReportStatus =
   | "resolved"
   | "stale";
 
-export type WaterProvider = "primewater" | "metro_pacific" | "other" | "unknown";
+export type WaterProvider = "primewater" | "metro_pacific";
 
 export interface WaterReport {
   id: string;

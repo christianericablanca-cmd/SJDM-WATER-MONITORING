@@ -11,8 +11,11 @@ import { BARANGAYS, BARANGAY_COORDS, BUSINESS_CATEGORIES } from "@/lib/constants
 import { useToast } from "@/components/ui/toast-provider";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
+import { Turnstile } from "@/components/reports/turnstile";
 import { Loader2, Building2, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
 const STEPS = ["Service Info", "Contact & Services", "Review"];
 
@@ -48,6 +51,7 @@ export function BusinessClaimForm() {
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const photoUrlRef = useRef<string | null>(null);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   useEffect(() => {
     return () => {
@@ -122,6 +126,10 @@ export function BusinessClaimForm() {
       toastError(t("Please fix errors", lang), t("Check the highlighted fields before submitting.", lang));
       return;
     }
+    if (TURNSTILE_SITE_KEY && !captchaToken) {
+      toastError(t("Captcha required", lang), t("Please verify you're human before submitting.", lang));
+      return;
+    }
 
     setLoading(true);
     toastInfo(t("Submitting your listing…", lang), t("An admin will review it shortly.", lang));
@@ -156,6 +164,7 @@ export function BusinessClaimForm() {
           latitude: lat,
           longitude: lng,
           photo_url: photoUrl,
+          captcha_token: captchaToken,
         }),
       });
 
@@ -406,6 +415,12 @@ export function BusinessClaimForm() {
               {photoPreview && (
                 <div className="rounded-lg overflow-hidden bg-muted border">
                   <img src={photoPreview} alt="Store preview" className="w-full h-36 object-cover" />
+                </div>
+              )}
+              {TURNSTILE_SITE_KEY && (
+                <div>
+                  <Label className="mb-2 block text-xs">{t("Verify you're human", lang)}</Label>
+                  <Turnstile siteKey={TURNSTILE_SITE_KEY} onVerify={(token) => setCaptchaToken(token)} />
                 </div>
               )}
               <p className="text-xs text-muted-foreground text-center">{t("An admin will review and approve your listing.", lang)}</p>

@@ -4,6 +4,23 @@ import { checkRateLimit, recordRateLimit, getClientIdentifier } from "@/lib/rate
 import { sanitizeString, isValidLat, isValidLng, isValidEnum, toSafeNumber } from "@/lib/sanitize";
 import { BARANGAYS, BUSINESS_CATEGORIES } from "@/lib/constants";
 
+const TURNSTILE_SECRET_KEY = process.env.TURNSTILE_SECRET_KEY || "";
+
+async function verifyCaptcha(token: string): Promise<boolean> {
+  if (!TURNSTILE_SECRET_KEY) return true;
+  try {
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret: TURNSTILE_SECRET_KEY, response: token }),
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(request: Request) {
   const supabase = createServiceClient();
   const body = await request.json();
@@ -20,6 +37,11 @@ export async function POST(request: Request) {
   const { allowed } = await checkRateLimit(identifier, "claim_business", 2, 24 * 60);
   if (!allowed) {
     return NextResponse.json({ error: "Maximum 2 submissions per day" }, { status: 429 });
+  }
+
+  const captchaToken = body.captcha_token;
+  if (!captchaToken || !(await verifyCaptcha(captchaToken))) {
+    return NextResponse.json({ error: "Captcha verification failed" }, { status: 400 });
   }
 
   const cleanBarangay = sanitizeString(body.barangay, 50);
