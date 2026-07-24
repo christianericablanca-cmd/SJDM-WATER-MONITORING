@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Card } from "@/components/ui/card";
 
 import { cn } from "@/lib/utils";
-import { Send, Ban, Flag, Settings, SlidersHorizontal } from "lucide-react";
+import { Send, Ban, Flag, Settings, SlidersHorizontal, Loader2 } from "lucide-react";
 import { BARANGAYS } from "@/lib/constants";
 
 type ChatMessage = {
@@ -122,9 +122,22 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   const [showSettings, setShowSettings] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const prevLenRef = useRef(0);
 
   const room = "sjdm";
+
+  // Persist nickname/barangay to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const saved = localStorage.getItem("chat_nickname");
+      if (saved) setNickname(saved);
+      const savedBar = localStorage.getItem("chat_barangay");
+      if (savedBar) setSelectedBarangay(savedBar);
+    } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { try { localStorage.setItem("chat_nickname", nickname); } catch { /* ignore */ } }, [nickname]);
+  useEffect(() => { try { localStorage.setItem("chat_barangay", selectedBarangay); } catch { /* ignore */ } }, [selectedBarangay]);
 
   const sorted = useMemo(() => {
     let msgs = messages.slice().sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
@@ -135,11 +148,14 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
     return msgs;
   }, [messages, barangayFilter, blocked]);
 
-  // Auto-scroll to newest messages (container only, never the page)
+  // Auto-scroll to newest messages (only when a new message is added, not on filter/block changes)
   useEffect(() => {
     if (sorted.length === 0) return;
     const el = listRef.current;
     if (!el) return;
+    const isNewMessage = sorted.length > prevLenRef.current;
+    prevLenRef.current = sorted.length;
+    if (!isNewMessage) return;
     el.scrollTop = el.scrollHeight;
   }, [sorted.length]);
 
@@ -267,7 +283,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
         </div>
 
         {/* Messages */}
-        <div ref={listRef} className="max-h-[55dvh] min-h-[300px] overflow-y-auto p-3 space-y-0.5 bg-muted/10" style={{ overflowAnchor: "none" }}>
+        <div ref={listRef} className="max-h-[55dvh] min-h-[300px] overflow-y-auto p-3 space-y-0.5 bg-muted/10">
           {sorted.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center px-8 py-16">
               <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
@@ -332,7 +348,6 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
                   </div>
                 );
               })}
-              <div ref={bottomRef} />
             </>
           )}
         </div>
@@ -341,7 +356,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
         <div className="border-t px-3 py-2.5">
           <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="flex items-end gap-2">
             <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
-            <Button type="submit" disabled={sending || !draft.trim()} className="h-10 w-10 rounded-xl shrink-0" size="icon"><Send className="h-4 w-4" /></Button>
+            <Button type="submit" disabled={sending || !draft.trim()} className="h-10 w-10 rounded-xl shrink-0" size="icon">{sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}</Button>
           </form>
         </div>
       </Card>
