@@ -27,7 +27,6 @@ type ChatMessage = {
 
 const BLOCKED_KEY = "chat_blocked_hashes";
 const BLOCK_NOTES_KEY = "chat_block_notes";
-const MY_HASH_KEY = "chat_my_hash";
 
 function getBlocked(): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -73,9 +72,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   const [selectedBarangay, setSelectedBarangay] = useState("");
   const [barangayFilter, setBarangayFilter] = useState("all");
   const [blocked, setBlocked] = useState<Set<string>>(getBlocked);
-  const [myHash, setMyHash] = useState<string | null>(
-    typeof window === "undefined" ? null : localStorage.getItem(MY_HASH_KEY),
-  );
+  const [myIds, setMyIds] = useState<Set<string>>(new Set());
   const [blockTarget, setBlockTarget] = useState<string | null>(null);
   const [blockNote, setBlockNote] = useState("");
   const listRef = useRef<HTMLDivElement>(null);
@@ -135,10 +132,8 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
-      if (!myHash && data.message?.author_hash) {
-        const hash = data.message.author_hash;
-        setMyHash(hash);
-        localStorage.setItem(MY_HASH_KEY, hash);
+      if (data.message?.id) {
+        setMyIds((prev) => new Set(prev).add(data.message.id));
       }
       setDraft("");
       toast.success(t("Sent", lang), t("Message posted.", lang));
@@ -190,15 +185,15 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   }, [messages]);
 
   return (
-    <div className="page-container py-4 sm:py-8 pb-20 md:pb-8 space-y-4 flex flex-col min-h-[calc(100dvh-4rem)] md:min-h-0">
-      <div className="shrink-0">
+    <div className="page-container py-4 sm:py-8 space-y-4">
+      <div>
         <h1 className="text-xl sm:text-3xl font-bold tracking-tight">{t("Community", lang)}</h1>
         <p className="text-xs sm:text-base text-muted-foreground">
           {t("Anonymous community chat for SJDM water updates.", lang)}
         </p>
       </div>
 
-      <Card className="p-3 sm:p-4 shadow-card shrink-0">
+      <Card className="p-3 sm:p-4 shadow-card">
         <div className="flex flex-col sm:flex-row gap-2 sm:items-center">
           <Input
             value={nickname}
@@ -223,8 +218,8 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
         </div>
       </Card>
 
-      <Card className="shadow-card overflow-hidden flex flex-col flex-1 min-h-0">
-        <div className="flex items-center gap-2 px-3 pt-2 pb-0 shrink-0">
+      <Card className="shadow-card overflow-hidden">
+        <div className="flex items-center gap-2 px-3 pt-2 pb-0">
           <Select value={barangayFilter} onValueChange={setBarangayFilter}>
             <SelectTrigger className="h-8 text-xs w-[160px]">
               <SelectValue placeholder={t("Filter by barangay", lang)} />
@@ -238,12 +233,12 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
           </Select>
           <span className="text-[10px] text-muted-foreground ml-auto">{sorted.length} messages</span>
         </div>
-        <div ref={listRef} className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-2 bg-muted/10 min-h-[200px]">
+        <div ref={listRef} className="max-h-[55dvh] min-h-[250px] overflow-y-auto p-3 sm:p-4 space-y-2 bg-muted/10">
           {sorted.length === 0 ? (
             <div className="text-sm text-muted-foreground text-center py-12">{t("No messages yet.", lang)}</div>
           ) : (
             sorted.map((m) => {
-              const isMine = m.author_hash === myHash;
+              const isMine = myIds.has(m.id);
               return (
               <div key={m.id} className={cn("flex", isMine ? "justify-end" : "justify-start")}>
                 <div className={cn(
@@ -294,7 +289,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
           )}
         </div>
 
-        <div className="border-t p-3 sm:p-4 flex gap-2 items-center shrink-0">
+        <div className="border-t p-3 sm:p-4 flex gap-2 items-center">
           <Input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
