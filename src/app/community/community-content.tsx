@@ -121,6 +121,8 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   const [blockNote, setBlockNote] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
   const prevLenRef = useRef(0);
 
@@ -194,6 +196,30 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       toast.error(t("Failed", lang), e instanceof Error ? e.message : t("Something went wrong", lang));
     } finally {
       setSending(false);
+    }
+  };
+
+  const loadOlder = async () => {
+    if (loadingOlder || !hasMore || messages.length === 0) return;
+    setLoadingOlder(true);
+    const oldest = [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
+    try {
+      const res = await fetch(`/api/chat/messages?room=${room}&limit=50&before=${oldest.created_at}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error("Failed to load");
+      const older = (data.messages ?? []) as ChatMessage[];
+      if (older.length < 50) setHasMore(false);
+      if (older.length > 0) {
+        setMessages((prev) => {
+          const existing = new Set(prev.map((m) => m.id));
+          const newMsgs = older.filter((m: ChatMessage) => !existing.has(m.id));
+          return [...newMsgs, ...prev];
+        });
+      }
+    } catch {
+      toast.error(t("Failed", lang), t("Something went wrong", lang));
+    } finally {
+      setLoadingOlder(false);
     }
   };
 
@@ -294,6 +320,14 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
             </div>
           ) : (
             <>
+              {hasMore && (
+                <div className="flex justify-center py-2">
+                  <Button variant="ghost" size="sm" className="text-xs gap-1 h-7" disabled={loadingOlder} onClick={loadOlder}>
+                    {loadingOlder ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+                    {loadingOlder ? t("Loading…", lang) : t("Load earlier messages", lang)}
+                  </Button>
+                </div>
+              )}
               {sorted.map((m, i) => {
                 const isMine = myIds.has(m.id);
                 const prev = i > 0 ? sorted[i - 1] : null;

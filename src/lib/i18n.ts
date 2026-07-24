@@ -632,6 +632,7 @@ export const dict: Record<string, Record<string, string>> = {
     { tl: "Itatago ang kanilang mga mensahe sa iyong view. Hindi nila malalaman na ni-block mo sila." },
   "Reason (optional, only visible to you)": { tl: "Dahilan (opsyonal, ikaw lang ang makakakita)" },
   Cancel: { tl: "Kanselahin" },
+  "Load earlier messages": { tl: "Mag-load ng mga naunang mensahe" },
 
   // Disclaimer page
   "Important:": { tl: "Mahalaga:" },
