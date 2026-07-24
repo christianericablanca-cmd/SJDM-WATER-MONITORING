@@ -642,20 +642,21 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
       )}
 
       {/* Legend + services toggle */}
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1 flex-1">
-          {ISSUE_TYPES.map((issue) => (
-            <div key={issue.value} className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
-              <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: MARKER_COLORS[issue.value] }} />
-              {t(issue.label, lang)}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1 flex-1">
+            {ISSUE_TYPES.map((issue) => (
+              <div key={issue.value} className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
+                <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: MARKER_COLORS[issue.value] }} />
+                {t(issue.label, lang)}
+              </div>
+            ))}
+            <span className="text-muted-foreground shrink-0 mx-0.5">|</span>
+            <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
+              <span className="text-sm">💧</span>
+              {t("Angat Dam", lang)}
             </div>
-          ))}
-          <span className="text-muted-foreground shrink-0 mx-0.5">|</span>
-          <div className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
-            <span className="text-sm">💧</span>
-            {t("Angat Dam", lang)}
           </div>
-        </div>
         <button
           onClick={() => setShowBoundaries(!showBoundaries)}
           className={cn(
@@ -681,6 +682,17 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
           <span className="hidden sm:inline">Services</span>
           <span className="tabular-nums">{businessesWithCoords.length}</span>
         </button>
+      </div>
+
+      {/* Service legend */}
+      <div className="flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1">
+        {(["water_refilling", "water_tanker", "water_storage", "laundry_services"] as const).map((cat) => (
+          <div key={cat} className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: CATEGORY_COLORS[cat] }} />
+            {CATEGORY_LABELS[cat]}
+          </div>
+        ))}
+      </div>
       </div>
 
       {/* Map */}
