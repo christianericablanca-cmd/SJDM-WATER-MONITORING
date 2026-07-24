@@ -357,7 +357,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
         {/* Input bar */}
         <div className="border-t px-3 py-2.5">
           <form onSubmit={(e) => { e.preventDefault(); void send(); }} className="flex items-end gap-2">
-            <Input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); void send(); } }} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
+            <Input value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={t("Message", lang)} className="h-10 text-sm rounded-xl bg-muted/30 border-muted-foreground/20 focus-visible:bg-background flex-1" />
             <Button type="submit" disabled={sending || !draft.trim()} className="h-10 w-10 rounded-xl shrink-0" size="icon"><Send className="h-4 w-4" /></Button>
           </form>
         </div>
