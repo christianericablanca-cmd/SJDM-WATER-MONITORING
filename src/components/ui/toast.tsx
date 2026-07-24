@@ -28,19 +28,19 @@ const variantStyles: Record<ToastVariant, { icon: React.ReactNode; className: st
   default: { icon: null, className: "border-border" },
   success: {
     icon: <CheckCircle2 className="h-4 w-4 text-success shrink-0" />,
-    className: "border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-950/30",
+    className: "border-green-200 dark:border-green-800 bg-white dark:bg-gray-900",
   },
   error: {
     icon: <AlertCircle className="h-4 w-4 text-destructive shrink-0" />,
-    className: "border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/30",
+    className: "border-red-200 dark:border-red-800 bg-white dark:bg-gray-900",
   },
   warning: {
     icon: <AlertTriangle className="h-4 w-4 text-warning shrink-0" />,
-    className: "border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/30",
+    className: "border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-900",
   },
   info: {
     icon: <Info className="h-4 w-4 text-water shrink-0" />,
-    className: "border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/30",
+    className: "border-blue-200 dark:border-blue-800 bg-white dark:bg-gray-900",
   },
 };
 

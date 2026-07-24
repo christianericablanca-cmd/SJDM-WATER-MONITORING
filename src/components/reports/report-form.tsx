@@ -160,6 +160,7 @@ export function ReportForm() {
     }
     setErrors({});
     setStep((s) => s + 1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSubmit = async () => {
@@ -210,23 +211,22 @@ export function ReportForm() {
         }),
       });
 
-      const data = await res.json();
+      const body = await res.json();
 
       if (!res.ok) {
         if (res.status === 409) {
-          const data = await res.json();
-          toastError(t("Active report found", lang), t("You already have a report being reviewed. Track it using ID:", lang) + " " + data.existing_report_id);
+          toastError(t("Active report found", lang), t("You already have a report being reviewed. Track it using ID:", lang) + " " + body.existing_report_id);
         } else if (res.status === 429) {
           toastError(t("Rate limit reached", lang), t("Maximum 1 report per hour. Please try again later.", lang));
         } else {
-          throw new Error(data.error || "Something went wrong");
+          throw new Error(body.error || "Something went wrong");
         }
         setLoading(false);
         return;
       }
 
-      toastSuccess(t("Report submitted!", lang), t("Your report ID is", lang) + " " + data.report_id_display + ". " + t("It's now subject for validation.", lang));
-      setSubmitted(data.report_id_display);
+      toastSuccess(t("Report submitted!", lang), t("Your report ID is", lang) + " " + body.report_id_display + ". " + t("It's now subject for validation.", lang));
+      setSubmitted(body.report_id_display);
       router.refresh();
     } catch (err: unknown) {
       toastError(t("Submission failed", lang), err instanceof Error ? err.message : t("Please check your connection and try again.", lang));

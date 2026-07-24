@@ -88,9 +88,11 @@ export function BusinessClaimForm() {
       }
       setErrors({});
       setStep(1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } else if (step === 1) {
       setErrors({});
       setStep(2);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 

@@ -42,7 +42,13 @@ export function getClientIdentifier(request: Request): string {
   const cookieHeader = request.headers.get("cookie") || "";
   const sessionMatch = cookieHeader.match(/session_id=([^;]+)/);
   const sessionId = sessionMatch?.[1] || "unknown";
-  const canvasFp = cookieHeader.match(/ww_cf=([^;]+)/)?.[1] || "none";
+  let canvasFp = cookieHeader.match(/ww_cf=([^;]+)/)?.[1];
+
+  // Privacy browsers (Brave, Tor) spoof or block canvas — exclude fallback values
+  // so they don't cause false collisions ("no-canvas") or false uniqueness (random spoof).
+  if (!canvasFp || canvasFp === "no-canvas" || canvasFp === "error" || canvasFp.length < 4) {
+    canvasFp = "";
+  }
 
   // Fingerprint: combine IP + User-Agent + session cookie + canvas fingerprint.
   // Canvas fingerprint stays the same across browser/incognito switches on same device.
