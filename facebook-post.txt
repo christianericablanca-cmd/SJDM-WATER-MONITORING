@@ -1,0 +1,21 @@
+Hello guys,
+
+I built a website for our city — WaterWatch SJDM.
+
+Over the years, water interruptions in San Jose del Monte have been a recurring problem. I created this to help us help each other stay informed and find resources when the water is out.
+
+What you can do:
+
+- Report water issues (no water, low pressure, dirty water, leaks) — anonymously, no account needed
+- See all active reports on a live map of SJDM
+- Track your report status using your Report ID
+- Find water refilling stations, tankers, and laundry services in the directory
+- Check emergency hotlines and government contacts
+- View the current Angat Dam water level
+- Switch between English and Tagalog
+
+Built with Next.js, Supabase, and Leaflet. 100% free, no ads.
+
+Website: https://sjdmwater.vercel.app/
+
+Feel free to share and use it. Feedback is welcome.

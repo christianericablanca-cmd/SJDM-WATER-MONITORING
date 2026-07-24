@@ -11,6 +11,7 @@ import { PwaRegister } from "@/components/ui/pwa-register";
 import { DisclaimPopover } from "@/components/layout/disclaim-popover";
 import { BugReportButton } from "@/components/ui/bug-report-button";
 import { FingerprintInit } from "@/components/fingerprint-init";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "WaterWatch SJDM — Community Water Monitoring",
@@ -69,6 +70,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <BugReportButton />
           <PwaRegister />
           <FingerprintInit />
+          <Analytics />
         </ToastNotificationProvider>
         </LanguageProvider>
         </ThemeProvider>
