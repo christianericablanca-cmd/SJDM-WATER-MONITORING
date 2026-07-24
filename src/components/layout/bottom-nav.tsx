@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, Store, Phone, Megaphone, MessageSquareText } from "lucide-react";
+import { MapPin, Store, Phone, Megaphone, MessageSquareText, Droplets } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
@@ -10,6 +10,7 @@ import { t } from "@/lib/i18n";
 const NAV_ITEMS = [
   { key: "map", label: "Water Map", href: "/map", icon: MapPin },
   { key: "announcements", label: "Announcements", href: "/announcements", icon: Megaphone },
+  { key: "report", label: "Report", href: "/report", icon: Droplets },
   { key: "community", label: "Community", href: "/community", icon: MessageSquareText },
   { key: "directory", label: "Services", href: "/directory", icon: Store },
   { key: "emergency", label: "Emergency", href: "/emergency", icon: Phone },
@@ -23,7 +24,7 @@ export function BottomNav() {
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t safe-bottom">
-      <div className="grid grid-cols-5 h-14">
+      <div className="grid grid-cols-6 h-14">
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(item.href + "/");
           const Icon = item.icon;

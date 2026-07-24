@@ -125,6 +125,7 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
   const [autoScroll, setAutoScroll] = useState(true);
   const listRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const justSent = useRef(false);
 
   const room = "sjdm";
 
@@ -137,8 +138,9 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
     return msgs;
   }, [messages, barangayFilter, blocked]);
 
-  // Auto-scroll
+  // Auto-scroll (skip if user just sent the message themselves)
   useEffect(() => {
+    if (justSent.current) { justSent.current = false; return; }
     if (!autoScroll || !bottomRef.current) return;
     bottomRef.current.scrollIntoView({ behavior: "smooth" });
   }, [sorted.length, autoScroll]);
@@ -180,7 +182,11 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to send");
-      if (data.message?.id) setMyIds((prev) => new Set(prev).add(data.message.id));
+      if (data.message) {
+        setMessages((prev) => (prev.some((p) => p.id === data.message.id) ? prev : [...prev, data.message]));
+        setMyIds((prev) => new Set(prev).add(data.message.id));
+        justSent.current = true;
+      }
       setDraft("");
     } catch (e) {
       toast.error(t("Failed", lang), e instanceof Error ? e.message : t("Something went wrong", lang));
