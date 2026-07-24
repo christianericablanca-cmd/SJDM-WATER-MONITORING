@@ -121,7 +121,7 @@ export const dict: Record<string, Record<string, string>> = {
   "Describe the issue briefly. What happened? How many households are affected?":
     { tl: "Ilarawan ang isyu. Anong nangyari? Ilang bahay ang apektado?" },
   "Upload Photo (optional)": { tl: "Mag-upload ng Larawan (optional)" },
-  "JPEG, PNG, or WebP. Max 2MB.": { tl: "JPEG, PNG, o WebP. Max 2MB." },
+  "JPEG, PNG, or WebP. Max 20MB.": { tl: "JPEG, PNG, o WebP. Max 20MB." },
   "Remove": { tl: "Tanggalin" },
   "Review your report": { tl: "Suriin ang iyong ulat" },
   "Photo": { tl: "Larawan" },
@@ -349,7 +349,7 @@ export const dict: Record<string, Record<string, string>> = {
   "Or set manually below — select the actual date the issue began, even if it was weeks or months ago. Don't remember the exact time? An estimate is fine.": { tl: "O itakda nang manual sa ibaba — piliin ang totoong petsa kung kailan nagsimula ang isyu, kahit linggo o buwan na ang nakalipas. Hindi matandaan ang eksaktong oras? Ok lang ang estimate." },
   "(optional)": { tl: "(optional)" },
   "(optional but helpful)": { tl: "(optional pero makakatulong)" },
-  "(optional, max 2MB)": { tl: "(optional, max 2MB)" },
+  "(optional, max 20MB)": { tl: "(optional, max 20MB)" },
   "characters": { tl: "mga character" },
   "(today)": { tl: "(ngayon)" },
   "Your report has been received and is now subject for validation.": { tl: "Natanggap na ang iyong ulat at ito ay sasailalim sa validation." },
@@ -401,7 +401,7 @@ export const dict: Record<string, Record<string, string>> = {
   "When did the issue start?": { tl: "Kailan nagsimula ang isyu?" },
   "What time did it start?": { tl: "Anong oras ito nagsimula?" },
   "Please share your GPS location to place the pin accurately": { tl: "Paki-share ang GPS location mo para mailagay ang pin nang tumpak" },
-  "Photo must be under 2MB": { tl: "Ang larawan ay dapat mas mababa sa 2MB" },
+  "Photo must be under 20MB": { tl: "Ang larawan ay dapat mas mababa sa 20MB" },
   "Only JPG, PNG, or WEBP files are allowed": { tl: "JPG, PNG, o WEBP lang na file ang pinapayagan" },
 
   // Track report lookup
@@ -471,7 +471,7 @@ export const dict: Record<string, Record<string, string>> = {
   "Submitting…": { tl: "Isinusumite…" },
 
   // Additional generic
-  "Photo is too large. Maximum size is 2MB.": { tl: "Masyadong malaki ang larawan. Ang maximum size ay 2MB." },
+  "Photo is too large. Maximum size is 20MB.": { tl: "Masyadong malaki ang larawan. Ang maximum size ay 20MB." },
   "GPS location is required. Go back to step 1 and share your location to submit this report.": { tl: "Kailangan ang GPS location. Bumalik sa step 1 at i-share ang lokasyon mo para makapag-ulat." },
 
   // More report form strings

@@ -129,7 +129,7 @@ export function ReportForm() {
     if (!startDate) e.start_date = t("When did the issue start?", lang);
     if (!startTime) e.start_time = t("What time did it start?", lang);
     if (!lat || !lng) e.location = t("Pin location is required", lang);
-    if (photo && photo.size > 2 * 1024 * 1024) e.photo = t("Photo must be under 2MB", lang);
+    if (photo && photo.size > 20 * 1024 * 1024) e.photo = t("Photo must be under 20MB", lang);
     if (photo && !["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
       e.photo = t("Only JPG, PNG, or WEBP files are allowed", lang);
     }
@@ -464,7 +464,7 @@ export function ReportForm() {
                 <p className="text-[11px] text-muted-foreground text-right">{description.length} {t("characters", lang)}</p>
               </div>
               <div className="space-y-1.5">
-                <Label>{t("Photo Evidence", lang)} <span className="text-muted-foreground text-xs">{t("(optional, max 2MB)", lang)}</span></Label>
+                <Label>{t("Photo Evidence", lang)} <span className="text-muted-foreground text-xs">{t("(optional, max 20MB)", lang)}</span></Label>
                 <div className={cn(
                   "flex items-center gap-3 p-3 border border-dashed rounded-lg transition-colors",
                   errors.photo ? "border-destructive" : "hover:border-water/50",
@@ -476,8 +476,8 @@ export function ReportForm() {
                         const file = e.target.files?.[0];
                         setPhoto(file || null);
                         setErrors((e) => ({ ...e, photo: undefined }));
-                        if (file && file.size > 2 * 1024 * 1024) {
-                          setErrors((e) => ({ ...e, photo: t("Photo is too large. Maximum size is 2MB.", lang) }));
+                        if (file && file.size > 20 * 1024 * 1024) {
+                          setErrors((e) => ({ ...e, photo: t("Photo is too large. Maximum size is 20MB.", lang) }));
                         }
                       }}
                       className="text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border file:border-water/30 file:text-xs file:bg-water-muted file:text-water-dark hover:file:bg-water-muted/80" />
