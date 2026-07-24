@@ -6,10 +6,11 @@ import type { WaterReport, Business, WaterProvider, Barangay, IssueType, ReportS
 import { SJDM_CENTER, ISSUE_EMOJI, ISSUE_TYPES, WATER_PROVIDERS, WATER_PROVIDER_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, MapPin, ChevronDown, ChevronUp, Filter, Store, Phone, Truck, Clock, Layers, RefreshCw } from "lucide-react";
+import { Search, MapPin, ChevronDown, ChevronUp, Filter, Store, Phone, Truck, Clock, Layers, RefreshCw, Info } from "lucide-react";
 import { cn, timeSince } from "@/lib/utils";
 import { BARANGAYS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { useLanguage } from "@/components/ui/language-provider";
 import { t } from "@/lib/i18n";
 import { BarangayBoundaries } from "./barangay-boundaries";
@@ -269,6 +270,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   const [showBusinesses, setShowBusinesses] = useState(true);
   const [showBoundaries, setShowBoundaries] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [damData, setDamData] = useState<{ level: number; normalHigh: number; date: string } | null>(null);
   const [previewReport, setPreviewReport] = useState<WaterReport | null>(null);
   const [previewBusiness, setPreviewBusiness] = useState<Business | null>(null);
@@ -644,7 +646,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
       {/* Legend + services toggle */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
-          <div className="flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1 flex-1">
+          <div className="hidden sm:flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1 flex-1">
             {ISSUE_TYPES.map((issue) => (
               <div key={issue.value} className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
                 <span className="inline-block w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: MARKER_COLORS[issue.value] }} />
@@ -682,10 +684,17 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
           <span className="hidden sm:inline">Services</span>
           <span className="tabular-nums">{businessesWithCoords.length}</span>
         </button>
+        <button
+          onClick={() => setLegendOpen(true)}
+          className="sm:hidden flex items-center gap-1.5 text-[10px] py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px] bg-muted border-border text-muted-foreground"
+        >
+          <Info className="h-3.5 w-3.5" />
+          <span>Legend</span>
+        </button>
       </div>
 
-      {/* Service legend */}
-      <div className="flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1">
+      {/* Service legend — desktop only */}
+      <div className="hidden sm:flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1">
         {(["water_refilling", "water_tanker", "water_storage", "laundry_services"] as const).map((cat) => (
           <div key={cat} className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
             <span className="inline-block w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: CATEGORY_COLORS[cat] }} />
@@ -694,6 +703,42 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         ))}
       </div>
       </div>
+
+      <Dialog open={legendOpen} onOpenChange={setLegendOpen}>
+        <DialogContent className="max-w-xs sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Map Legend</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Issue Types</p>
+              <div className="space-y-2">
+                {ISSUE_TYPES.map((issue) => (
+                  <div key={issue.value} className="flex items-center gap-2 text-sm">
+                    <span className="inline-block w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: MARKER_COLORS[issue.value] }} />
+                    {issue.label}
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 text-sm pt-1 border-t border-border">
+                  <span className="text-base">💧</span>
+                  Angat Dam
+                </div>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Services</p>
+              <div className="space-y-2">
+                {(["water_refilling", "water_tanker", "water_storage", "laundry_services"] as const).map((cat) => (
+                  <div key={cat} className="flex items-center gap-2 text-sm">
+                    <span className="inline-block w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: CATEGORY_COLORS[cat] }} />
+                    {CATEGORY_LABELS[cat]}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Map */}
       <div className="h-[55vh] min-h-[350px] sm:h-[600px] xl:h-[700px] rounded-xl border overflow-hidden shadow-card relative bg-muted isolate">
