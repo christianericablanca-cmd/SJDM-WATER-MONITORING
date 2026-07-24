@@ -645,7 +645,14 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
 
       {/* Legend + services toggle */}
       <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setLegendOpen(true)}
+            className="sm:hidden flex items-center gap-1.5 text-[10px] py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px] bg-muted border-border text-muted-foreground"
+          >
+            <Info className="h-3.5 w-3.5" />
+            <span>Legend</span>
+          </button>
           <div className="hidden sm:flex overflow-x-auto gap-2 sm:gap-2.5 pb-1 text-[10px] sm:text-xs text-muted-foreground -mx-1 px-1 flex-1">
             {ISSUE_TYPES.map((issue) => (
               <div key={issue.value} className="flex items-center gap-1 sm:gap-1.5 whitespace-nowrap shrink-0">
@@ -659,38 +666,33 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
               {t("Angat Dam", lang)}
             </div>
           </div>
-        <button
-          onClick={() => setShowBoundaries(!showBoundaries)}
-          className={cn(
-            "flex items-center gap-1.5 text-[10px] sm:text-xs py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px]",
-            showBoundaries
-              ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
-              : "bg-muted border-border text-muted-foreground",
-          )}
-        >
-          <Layers className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">{t("Boundaries", lang)}</span>
-        </button>
-        <button
-          onClick={() => setShowBusinesses(!showBusinesses)}
-          className={cn(
-            "flex items-center gap-1.5 text-[10px] sm:text-xs py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px]",
-            showBusinesses
-              ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
-              : "bg-muted border-border text-muted-foreground",
-          )}
-        >
-          <Store className="h-3.5 w-3.5" />
-          <span className="hidden sm:inline">Services</span>
-          <span className="tabular-nums">{businessesWithCoords.length}</span>
-        </button>
-        <button
-          onClick={() => setLegendOpen(true)}
-          className="sm:hidden flex items-center gap-1.5 text-[10px] py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px] bg-muted border-border text-muted-foreground"
-        >
-          <Info className="h-3.5 w-3.5" />
-          <span>Legend</span>
-        </button>
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={() => setShowBoundaries(!showBoundaries)}
+              className={cn(
+                "flex items-center gap-1.5 text-[10px] sm:text-xs py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px]",
+                showBoundaries
+                  ? "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300"
+                  : "bg-muted border-border text-muted-foreground",
+              )}
+            >
+              <Layers className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{t("Boundaries", lang)}</span>
+            </button>
+            <button
+              onClick={() => setShowBusinesses(!showBusinesses)}
+              className={cn(
+                "flex items-center gap-1.5 text-[10px] sm:text-xs py-2 px-2.5 rounded-lg border transition-colors shrink-0 min-h-[44px]",
+                showBusinesses
+                  ? "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300"
+                  : "bg-muted border-border text-muted-foreground",
+              )}
+            >
+              <Store className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Services</span>
+              <span className="tabular-nums">{businessesWithCoords.length}</span>
+            </button>
+          </div>
       </div>
 
       {/* Service legend — desktop only */}
