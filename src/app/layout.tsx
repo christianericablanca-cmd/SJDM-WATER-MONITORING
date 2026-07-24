@@ -33,13 +33,13 @@ export const metadata: Metadata = {
     siteName: "WaterWatch SJDM",
     locale: "en_PH",
     url: "https://sjdmwater.vercel.app/",
-    images: [{ url: "https://sjdmwater.vercel.app/icons/icon-512.svg", width: 512, height: 512 }],
+    images: [{ url: "https://sjdmwater.vercel.app/og-image.png", width: 1200, height: 630 }],
   },
   twitter: {
     card: "summary_large_image",
     title: "WaterWatch SJDM",
     description: "Community Water Monitoring for San Jose del Monte, Bulacan",
-    images: ["https://sjdmwater.vercel.app/icons/icon-512.svg"],
+    images: ["https://sjdmwater.vercel.app/og-image.png"],
   },
 };
 
