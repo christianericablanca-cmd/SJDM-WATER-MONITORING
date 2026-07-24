@@ -115,7 +115,8 @@ export function BarangayBoundaries({ map, visible, lang }: BarangayBoundariesPro
             });
             if (target.getTooltip()) target.closeTooltip();
           },
-          click: () => {
+          click: (e) => {
+            L.DomEvent.preventDefault(e.originalEvent);
           },
         });
       },

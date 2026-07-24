@@ -178,6 +178,10 @@
   z-index: 0 !important;
 }
 
+.leaflet-interactive:focus {
+  outline: none !important;
+}
+
 .leaflet-control-zoom a {
   width: 36px !important;
   height: 36px !important;
