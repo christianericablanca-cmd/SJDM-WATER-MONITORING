@@ -722,6 +722,9 @@ export const dict: Record<string, Record<string, string>> = {
   "Upload a photo if possible — it helps admins verify the issue faster.": { tl: "Mag-upload ng larawan kung maaari — nakakatulong ito sa admin na ma-verify ang isyu nang mas mabilis." },
   "One report per issue — avoid submitting duplicate reports for the same problem.": { tl: "Isang ulat bawat isyu — iwasan ang pagsusumite ng dobleng ulat para sa parehong problema." },
   "Keep your Report ID safe — without it, you cannot track or follow up on your report.": { tl: "Itago nang ligtas ang iyong Report ID — kung wala nito, hindi mo masusubaybayan o masusundan ang iyong ulat." },
+
+  // Report form pin hint
+  "Drag and drop the pin to match your nearest area. Choosing the default barangay location will randomly place it inside the barangay.": { tl: "I-drag at i-drop ang pin para itugma sa iyong pinakamalapit na lugar. Ang pagpili ng default na lokasyon ng barangay ay random na ilalagay ito sa loob ng barangay." },
 };
 
 export function t(key: string, lang: "en" | "tl"): string {

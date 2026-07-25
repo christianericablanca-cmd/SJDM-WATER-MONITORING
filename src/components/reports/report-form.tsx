@@ -332,6 +332,9 @@ export function ReportForm() {
                   </p>
                 )}
               </div>
+              <div className="rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/50 px-3 py-2.5 text-xs text-amber-800 dark:text-amber-200 leading-relaxed">
+                {t("Drag and drop the pin to match your nearest area. Choosing the default barangay location will randomly place it inside the barangay.", lang)}
+              </div>
               <div className="space-y-1.5">
                 <Label>{t("Pin Location", lang)} <span className="text-destructive">*</span></Label>
                 <LocationPicker barangay={barangay} onPin={handlePin} lat={lat} lng={lng} />
