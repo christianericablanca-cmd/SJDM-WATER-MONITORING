@@ -536,12 +536,22 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   }, [mounted]);
 
   const filteredReports = useMemo(() => {
-    return liveReports.filter((r) => {
+    const filtered = liveReports.filter((r) => {
       if (barangayFilter !== "all" && r.barangay !== barangayFilter) return false;
       if (issueFilter !== "all" && r.issue_type !== issueFilter) return false;
       if (providerFilter !== "all" && (r.water_provider || "unknown") !== providerFilter) return false;
       if (search && !r.barangay.toLowerCase().includes(search.toLowerCase())) return false;
       return true;
+    });
+    const coordCount = new Map<string, number>();
+    return filtered.map((r) => {
+      const key = `${r.latitude},${r.longitude}`;
+      const idx = coordCount.get(key) ?? 0;
+      coordCount.set(key, idx + 1);
+      if (idx === 0) return r;
+      const step = idx * 0.000015;
+      const angle = idx * 2.399;
+      return { ...r, latitude: r.latitude + Math.cos(angle) * step, longitude: r.longitude + Math.sin(angle) * step };
     });
   }, [liveReports, barangayFilter, issueFilter, providerFilter, search]);
 
