@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, memo } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import type { WaterReport, Business, WaterProvider, Barangay, IssueType, ReportStatus } from "@/lib/types";
 import { SJDM_CENTER, ISSUE_EMOJI, ISSUE_TYPES, WATER_PROVIDERS, WATER_PROVIDER_LABELS, STATUS_LABELS } from "@/lib/constants";
 import { Input } from "@/components/ui/input";
@@ -198,8 +199,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
                 )}
                 {report.photo_url && (
                   <button onClick={() => onPhotoClick(report)} className="relative w-full h-28 sm:h-32 rounded-md overflow-hidden bg-muted -mx-0.5 p-0 border-0 block cursor-pointer text-left">
-                    <img src={report.photo_url} alt="Report photo" className="w-full h-full object-cover"
-                      loading="lazy" />
+                    <Image src={report.photo_url} alt="Report photo" fill className="object-cover" sizes="250px" />
                   </button>
                 )}
                 {report.description && (
@@ -222,8 +222,8 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
           <Popup>
             <div className="space-y-1.5 min-w-[190px] max-w-[250px]">
               {biz.photo_url && (
-                <button onClick={() => onBusinessPhotoClick(biz)} className="w-full h-24 rounded-md overflow-hidden -mx-0.5 p-0 border-0 block cursor-pointer">
-                  <img src={biz.photo_url} alt={biz.name} className="w-full h-full object-cover" loading="lazy" />
+                <button onClick={() => onBusinessPhotoClick(biz)} className="relative w-full h-24 rounded-md overflow-hidden -mx-0.5 p-0 border-0 block cursor-pointer">
+                  <Image src={biz.photo_url} alt={biz.name} fill className="object-cover" sizes="250px" />
                 </button>
               )}
               <div className="flex items-center gap-1.5">
@@ -782,7 +782,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4" onClick={() => setPreviewBusiness(null)}>
           <div className="bg-background rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="relative w-full aspect-video bg-muted">
-              <img src={previewBusiness.photo_url} alt={previewBusiness.name} className="w-full h-full object-contain" />
+              <Image src={previewBusiness.photo_url} alt={previewBusiness.name} fill className="object-contain" />
               <button onClick={() => setPreviewBusiness(null)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center text-sm hover:bg-black/70">✕</button>
             </div>
             <div className="p-4 space-y-2">
@@ -822,7 +822,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         <div className="fixed inset-0 z-[9999] bg-black/70 flex items-center justify-center p-4" onClick={() => setPreviewReport(null)}>
           <div className="bg-background rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <div className="relative w-full aspect-video bg-muted">
-              <img src={previewReport.photo_url} alt="Report" className="w-full h-full object-contain" />
+              <Image src={previewReport.photo_url} alt="Report" fill className="object-contain" />
               <button onClick={() => setPreviewReport(null)} className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 text-white flex items-center justify-center text-sm hover:bg-black/70">✕</button>
             </div>
             <div className="p-4 space-y-2">

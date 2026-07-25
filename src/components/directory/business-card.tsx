@@ -8,6 +8,7 @@ import { ImagePreview } from "@/components/directory/image-preview";
 import { ImageIcon, MapIcon, ArrowLeft } from "lucide-react";
 import type { Business } from "@/lib/types";
 import { useLanguage } from "@/components/ui/language-provider";
+import Image from "next/image";
 import { t } from "@/lib/i18n";
 
 const MiniMap = dynamic(() => import("./mini-map"), { ssr: false });
@@ -48,8 +49,7 @@ export function BusinessCard({ biz }: { biz: Business }) {
               <div style={{ backfaceVisibility: "hidden" }}>
                 <div className="text-sm">
                   {biz.photo_url && (
-                    <img src={biz.photo_url} alt={biz.name}
-                      className="w-full aspect-video object-cover rounded-md mb-2" />
+                    <Image src={biz.photo_url} alt={biz.name} width={600} height={400} className="w-full aspect-video object-cover rounded-md mb-2" />
                   )}
                   <div className="flex items-center gap-2 mb-2">
                     <Badge variant={biz.verified ? "success" : "outline"}>

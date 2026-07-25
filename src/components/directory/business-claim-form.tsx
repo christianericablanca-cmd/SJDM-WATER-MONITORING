@@ -14,6 +14,7 @@ import { t } from "@/lib/i18n";
 import { Turnstile } from "@/components/reports/turnstile";
 import { Loader2, Building2, CheckCircle2, AlertCircle, ArrowLeft, ArrowRight, Upload } from "lucide-react";
 import { cn } from "@/lib/utils";
+import NextImage from "next/image";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
@@ -97,7 +98,7 @@ export function BusinessClaimForm() {
   };
 
   const compressImage = (file: File, maxSize = 1024, quality = 0.7): Promise<Blob> => {
-    return new Promise((resolve, reject) => {
+    return new Promise<Blob>((resolve, reject) => {
       const img = new Image();
       const url = URL.createObjectURL(file);
       img.onload = () => {
@@ -375,7 +376,7 @@ export function BusinessClaimForm() {
                 </div>
                 {photoPreview && (
                   <div className="relative w-full h-32 rounded-lg overflow-hidden bg-muted">
-                    <img src={photoPreview} alt="Preview" className="w-full h-full object-cover" />
+                    <NextImage src={photoPreview} alt="Preview" width={400} height={300} className="w-full h-full object-cover" />
                   </div>
                 )}
               </div>
@@ -416,7 +417,7 @@ export function BusinessClaimForm() {
               </div>
               {photoPreview && (
                 <div className="rounded-lg overflow-hidden bg-muted border">
-                  <img src={photoPreview} alt="Store preview" className="w-full h-36 object-cover" />
+                  <NextImage src={photoPreview} alt="Store preview" width={400} height={200} className="w-full h-36 object-cover" />
                 </div>
               )}
               {TURNSTILE_SITE_KEY && (

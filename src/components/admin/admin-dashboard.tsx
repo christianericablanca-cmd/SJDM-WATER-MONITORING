@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useMemo } from "react";
+import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -1377,7 +1378,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                         )}
                       </div>
                       {bizPhotoPreview && (
-                        <img src={bizPhotoPreview} alt="Preview" className="w-full h-32 object-cover rounded-lg border" />
+                        <Image src={bizPhotoPreview} alt="Preview" width={400} height={200} className="w-full h-32 object-cover rounded-lg border" />
                       )}
                     </div>
                     <div className="flex items-center gap-2">
@@ -1945,7 +1946,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               </div>
               {announceForm.image_url && (
                 <div className="relative mt-1.5">
-                  <img src={announceForm.image_url} alt="" className="w-full h-32 object-cover rounded-lg border" />
+                  <Image src={announceForm.image_url} alt="" width={400} height={200} className="w-full h-32 object-cover rounded-lg border" />
                   <button type="button" onClick={() => setAnnounceForm((p) => ({ ...p, image_url: "" }))}
                     className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center text-xs hover:bg-black/70">
                     ✕
@@ -2058,7 +2059,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               <div className="space-y-3 sm:space-y-4">
                 {viewReport.photo_url && (
                   <div className="rounded-lg overflow-hidden bg-muted">
-                    <img src={viewReport.photo_url} alt="Report photo" className="w-full h-40 sm:h-56 object-cover" />
+                    <Image src={viewReport.photo_url} alt="Report photo" width={600} height={400} className="w-full h-40 sm:h-56 object-cover" />
                   </div>
                 )}
 
@@ -2201,7 +2202,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               <div className="space-y-3 sm:space-y-4">
                 {viewClaim.photo_url && (
                   <div className="rounded-lg overflow-hidden bg-muted">
-                    <img src={viewClaim.photo_url} alt={viewClaim.name} className="w-full h-36 sm:h-48 object-cover" />
+                    <Image src={viewClaim.photo_url} alt={viewClaim.name} width={400} height={300} className="w-full h-36 sm:h-48 object-cover" />
                   </div>
                 )}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2.5 text-sm">

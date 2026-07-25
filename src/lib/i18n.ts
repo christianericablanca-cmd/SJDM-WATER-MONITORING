@@ -276,6 +276,10 @@ export const dict: Record<string, Record<string, string>> = {
   "No community announcements yet.": { tl: "Wala pang anunsyo ng komunidad." },
   Official: { tl: "Opisyal" },
   Source: { tl: "Pinagmulan" },
+  "Pull to refresh": { tl: "Hilahin para i-refresh" },
+  "Release to refresh": { tl: "Bitawan para i-refresh" },
+  "Refreshing…": { tl: "Nagre-refresh…" },
+  "All announcements loaded": { tl: "Lahat ng anunsyo ay na-load na" },
 
   // Disclaim popover
   "Welcome to WaterWatch SJDM": { tl: "Maligayang Pagdating sa WaterWatch SJDM" },

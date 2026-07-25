@@ -2,12 +2,12 @@
 
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/components/ui/language-provider";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
-import { Megaphone, Building2, ImageOff, Loader2, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { Megaphone, Building2, ImageOff, Loader2, RefreshCw } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import Image from "next/image";
 
 interface Announcement {
   id: string;
@@ -32,12 +32,7 @@ function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
     <Card className="shadow-card border-border/60 overflow-hidden flex flex-col sm:flex-row w-full mx-auto">
       {a.image_url && !imgError ? (
         <div className="relative w-full sm:w-[360px] lg:w-[440px] shrink-0 bg-muted overflow-hidden" style={{ minHeight: 280 }}>
-          <img
-            src={a.image_url}
-            alt={a.title}
-            className="absolute inset-0 w-full h-full object-contain p-2"
-            onError={() => setImgError(true)}
-          />
+          <Image src={a.image_url} alt={a.title} fill className="object-contain p-2" onError={() => setImgError(true)} />
         </div>
       ) : a.image_url && imgError ? (
         <div className="w-full sm:w-[360px] lg:w-[440px] shrink-0 bg-muted flex items-center justify-center" style={{ minHeight: 280 }}>
@@ -67,13 +62,18 @@ export function AnnouncementsContent({ announcements: initial, total, pageSize }
   const { lang } = useLanguage();
   const [items, setItems] = useState<Announcement[]>(initial);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const touchStartY = useRef(0);
+  const touchCurrentY = useRef(0);
+  const [pullDistance, setPullDistance] = useState(0);
 
-  const official = items.filter((a) => a.is_official);
-  const community = items.filter((a) => !a.is_official);
   const loaded = items.length;
   const hasMore = loaded < total;
 
-  const loadMore = async () => {
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/announcements?offset=${loaded}&limit=${pageSize}`);
@@ -84,10 +84,92 @@ export function AnnouncementsContent({ announcements: initial, total, pageSize }
       // silently fail
     }
     setLoading(false);
-  };
+  }, [loaded, loading, hasMore, pageSize]);
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      const res = await fetch(`/api/announcements?offset=0&limit=${pageSize}`);
+      if (!res.ok) throw new Error();
+      const data: Announcement[] = await res.json();
+      setItems(data);
+    } catch {
+      // silently fail
+    }
+    setRefreshing(false);
+    setPullDistance(0);
+  }, [pageSize]);
+
+  // Infinite scroll
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMore();
+      },
+      { rootMargin: "200px" },
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [loadMore]);
+
+  // Pull-to-refresh (mobile)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (window.scrollY > 0) return;
+      touchStartY.current = e.touches[0].clientY;
+      touchCurrentY.current = e.touches[0].clientY;
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (window.scrollY > 0) return;
+      touchCurrentY.current = e.touches[0].clientY;
+      const dist = touchCurrentY.current - touchStartY.current;
+      if (dist > 0) setPullDistance(Math.min(dist * 0.4, 80));
+    };
+
+    const onTouchEnd = () => {
+      if (pullDistance > 50 && !refreshing) handleRefresh();
+      else setPullDistance(0);
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: true });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, [pullDistance, refreshing, handleRefresh]);
+
+  const official = items.filter((a) => a.is_official);
+  const community = items.filter((a) => !a.is_official);
 
   return (
-    <div className="page-container py-6 sm:py-8 space-y-8">
+    <div ref={containerRef} className="page-container py-6 sm:py-8 space-y-8">
+      {/* Pull-to-refresh indicator */}
+      {pullDistance > 0 && (
+        <div className="flex justify-center" style={{ transform: `translateY(${pullDistance}px)`, transition: "transform 0.1s" }}>
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <RefreshCw className={`h-4 w-4 ${pullDistance > 50 ? "" : "animate-spin"}`} />
+            {pullDistance > 50 ? t("Release to refresh", lang) : t("Pull to refresh", lang)}
+          </div>
+        </div>
+      )}
+      {refreshing && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t("Refreshing…", lang)}
+          </div>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-4">
         <div>
           <h1 className="section-title">{t("Announcements", lang)}</h1>
@@ -143,12 +225,20 @@ export function AnnouncementsContent({ announcements: initial, total, pageSize }
         )}
       </section>
 
-      {hasMore && (
-        <div className="flex justify-center pt-2">
-          <Button variant="outline" onClick={loadMore} disabled={loading} className="gap-2 min-w-[160px]">
-            {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Loading…</> : <><ChevronDown className="h-4 w-4" /> Load More ({total - loaded} left)</>}
-          </Button>
+      {/* Sentinel for infinite scroll */}
+      <div ref={sentinelRef} className="h-4" />
+
+      {loading && (
+        <div className="flex justify-center">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            {t("Loading…", lang)}
+          </div>
         </div>
+      )}
+
+      {!hasMore && items.length > 0 && (
+        <p className="text-center text-xs text-muted-foreground pb-4">{t("All announcements loaded", lang)}</p>
       )}
     </div>
   );
