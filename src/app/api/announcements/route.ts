@@ -9,11 +9,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Too many requests. Try again later." }, { status: 429 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const offset = Math.max(0, parseInt(searchParams.get("offset") ?? "0", 10) || 0);
+  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") ?? "12", 10) || 12));
+
   const supabase = await createServerSupabase();
   const { data, error } = await supabase
     .from("announcements")
-    .select("id, title, content, source, is_official, created_at")
-    .order("created_at", { ascending: false });
+    .select("id, title, content, source, is_official, created_at, image_url")
+    .order("created_at", { ascending: false })
+    .range(offset, offset + limit - 1);
 
   if (error) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

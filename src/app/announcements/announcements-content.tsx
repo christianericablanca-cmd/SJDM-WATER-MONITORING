@@ -4,8 +4,9 @@ import { t } from "@/lib/i18n";
 import { useLanguage } from "@/components/ui/language-provider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
-import { Megaphone, Building2, ImageOff } from "lucide-react";
+import { Megaphone, Building2, ImageOff, Loader2, ChevronDown } from "lucide-react";
 import { useState } from "react";
 
 interface Announcement {
@@ -20,6 +21,8 @@ interface Announcement {
 
 interface AnnouncementsContentProps {
   announcements: Announcement[];
+  total: number;
+  pageSize: number;
 }
 
 function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
@@ -62,19 +65,38 @@ function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
   );
 }
 
-export function AnnouncementsContent({ announcements }: AnnouncementsContentProps) {
+export function AnnouncementsContent({ announcements: initial, total, pageSize }: AnnouncementsContentProps) {
   const { lang } = useLanguage();
+  const [items, setItems] = useState<Announcement[]>(initial);
+  const [loading, setLoading] = useState(false);
 
-  const official = announcements?.filter((a) => a.is_official) ?? [];
-  const community = announcements?.filter((a) => !a.is_official) ?? [];
+  const official = items.filter((a) => a.is_official);
+  const community = items.filter((a) => !a.is_official);
+  const loaded = items.length;
+  const hasMore = loaded < total;
+
+  const loadMore = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/announcements?offset=${loaded}&limit=${pageSize}`);
+      if (!res.ok) throw new Error();
+      const data: Announcement[] = await res.json();
+      setItems((prev) => [...prev, ...data]);
+    } catch {
+      // silently fail
+    }
+    setLoading(false);
+  };
 
   return (
     <div className="page-container py-6 sm:py-8 space-y-8">
-      <div>
-        <h1 className="section-title">{t("Announcements", lang)}</h1>
-        <p className="section-subtitle">
-          {t("Official advisories and community announcements about the water situation in SJDM.", lang)}
-        </p>
+      <div className="flex items-center justify-between gap-4">
+        <div>
+          <h1 className="section-title">{t("Announcements", lang)}</h1>
+          <p className="section-subtitle">
+            {t("Official advisories and community announcements about the water situation in SJDM.", lang)}
+          </p>
+        </div>
       </div>
 
       <section>
@@ -122,6 +144,14 @@ export function AnnouncementsContent({ announcements }: AnnouncementsContentProp
           </div>
         )}
       </section>
+
+      {hasMore && (
+        <div className="flex justify-center pt-2">
+          <Button variant="outline" onClick={loadMore} disabled={loading} className="gap-2 min-w-[160px]">
+            {loading ? <><Loader2 className="h-4 w-4 animate-spin" /> Loading…</> : <><ChevronDown className="h-4 w-4" /> Load More ({total - loaded} left)</>}
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
