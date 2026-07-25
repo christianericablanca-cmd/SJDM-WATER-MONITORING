@@ -204,7 +204,11 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
     setLoadingOlder(true);
     const oldest = [...messages].sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())[0];
     try {
-      const res = await fetch(`/api/chat/messages?room=${room}&limit=50&before=${oldest.created_at}`);
+      const url = new URL("/api/chat/messages", window.location.origin);
+      url.searchParams.set("room", room);
+      url.searchParams.set("limit", "50");
+      url.searchParams.set("before", oldest.created_at);
+      const res = await fetch(url.toString());
       const data = await res.json();
       if (!res.ok) throw new Error("Failed to load");
       const older = (data.messages ?? []) as ChatMessage[];
