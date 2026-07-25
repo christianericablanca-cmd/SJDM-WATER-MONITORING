@@ -29,38 +29,40 @@ function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <Card className="shadow-card border-border/60 overflow-hidden flex flex-col">
+    <Card className="shadow-card border-border/60 overflow-hidden flex flex-col sm:flex-row">
       {a.image_url && !imgError ? (
-        <div className="relative w-full aspect-[16/9] bg-muted overflow-hidden">
+        <div className="relative w-full sm:w-[200px] lg:w-[280px] shrink-0 bg-muted overflow-hidden" style={{ minHeight: 160 }}>
           <img
             src={a.image_url}
             alt={a.title}
-            className="w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover"
             onError={() => setImgError(true)}
           />
         </div>
       ) : a.image_url && imgError ? (
-        <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
+        <div className="w-full sm:w-[200px] lg:w-[280px] shrink-0 bg-muted flex items-center justify-center" style={{ minHeight: 160 }}>
           <ImageOff className="h-8 w-8 text-muted-foreground/50" />
         </div>
       ) : null}
-      <CardHeader className="pb-2">
-        <div className="flex items-center gap-2 mb-1.5">
-          <Badge variant={a.is_official ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
-            {a.is_official ? t("Official", lang) : t("Community", lang)}
-          </Badge>
-          <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
-        </div>
-        <CardTitle className="text-base leading-snug">{a.title}</CardTitle>
-        {a.is_official && (
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {t("Source:", lang)} {a.source}
-          </p>
-        )}
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col">
-        <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
-      </CardContent>
+      <div className="flex flex-col flex-1 min-w-0">
+        <CardHeader className="pb-2">
+          <div className="flex items-center gap-2 mb-1.5">
+            <Badge variant={a.is_official ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+              {a.is_official ? t("Official", lang) : t("Community", lang)}
+            </Badge>
+            <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
+          </div>
+          <CardTitle className="text-base leading-snug">{a.title}</CardTitle>
+          {a.is_official && (
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {t("Source:", lang)} {a.source}
+            </p>
+          )}
+        </CardHeader>
+        <CardContent className="flex-1 flex flex-col">
+          <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
+        </CardContent>
+      </div>
     </Card>
   );
 }
