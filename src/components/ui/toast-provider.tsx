@@ -31,7 +31,8 @@ export function ToastNotificationProvider({ children }: { children: React.ReactN
   const [toasts, setToasts] = React.useState<ToastMessage[]>([]);
 
   const addToast = React.useCallback((title: string, description?: string, variant: ToastVariant = "default") => {
-    const id = crypto.randomUUID();
+    let id: string;
+    try { id = crypto.randomUUID(); } catch { id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; }
     setToasts((prev) => [...prev, { id, title, description, variant }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));

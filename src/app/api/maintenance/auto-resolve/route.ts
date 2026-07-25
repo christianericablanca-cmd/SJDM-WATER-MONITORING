@@ -17,10 +17,7 @@ export async function POST() {
 
   const { data, error } = await supabase
     .from("reports")
-    .update({
-      status: "stale",
-      resolved_at: new Date().toISOString(),
-    })
+    .update({ status: "stale", updated_at: new Date().toISOString() })
     .neq("status", "resolved")
     .neq("status", "stale")
     .lt("updated_at", sevenDaysAgo)

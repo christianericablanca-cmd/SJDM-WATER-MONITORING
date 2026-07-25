@@ -19,13 +19,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
 
+  const { data: report } = await supabase
+    .from("reports")
+    .select("id")
+    .eq("report_id_display", reportId)
+    .maybeSingle();
+  if (!report) {
+    return NextResponse.json({ error: "Report not found" }, { status: 404 });
+  }
+
   const sessionCookie = request.headers.get("cookie") || "";
   const sessionMatch = sessionCookie.match(/session_id=([^;]+)/);
   const sessionId = sessionMatch?.[1] || identifier;
   const sessionHash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sessionId)))).map((b) => b.toString(16).padStart(2, "0")).join("");
 
   const { error } = await supabase.from("report_confirmations").insert({
-    report_id: reportId,
+    report_id: report.id,
     session_id: sessionHash,
   });
 

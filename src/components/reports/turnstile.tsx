@@ -34,16 +34,19 @@ export function Turnstile({ siteKey, onVerify, onExpire, onError, theme = "light
   const loadedRef = useRef(false);
 
   useEffect(() => {
-    if (loadedRef.current) return;
-    loadedRef.current = true;
+    if (!document.querySelector('script[src*="turnstile/v0/api.js"]')) {
+      const script = document.createElement("script");
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback";
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
+    }
 
-    const script = document.createElement("script");
-    script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback";
-    script.async = true;
-    script.defer = true;
-
-    window.onloadTurnstileCallback = () => {
-      if (containerRef.current && !widgetIdRef.current) {
+    const renderWidget = () => {
+      if (containerRef.current) {
+        if (widgetIdRef.current) {
+          try { window.turnstile.remove(widgetIdRef.current); } catch {}
+        }
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           callback: onVerify,
@@ -54,13 +57,16 @@ export function Turnstile({ siteKey, onVerify, onExpire, onError, theme = "light
       }
     };
 
-    document.head.appendChild(script);
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      window.onloadTurnstileCallback = renderWidget;
+    }
 
     return () => {
       if (widgetIdRef.current) {
-        try {
-          window.turnstile.remove(widgetIdRef.current);
-        } catch {}
+        try { window.turnstile.remove(widgetIdRef.current); } catch {}
+        widgetIdRef.current = null;
       }
     };
   }, [siteKey, onVerify, onExpire, onError, theme]);

@@ -56,6 +56,7 @@ export async function POST(request: Request) {
   const sessionCookie = request.headers.get("cookie") || "";
   const sessionMatch = sessionCookie.match(/session_id=([^;]+)/);
   const sessionId = sessionMatch?.[1] || identifier;
+  const sessionHash = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(sessionId)))).map((b) => b.toString(16).padStart(2, "0")).join("");
 
   const lat = (() => {
     const n = toSafeNumber(body.latitude);
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
     latitude: lat,
     longitude: lng,
     photo_url: body.photo_url ? sanitizeString(body.photo_url, 500) : null,
-    submitted_by_session: sessionId,
+    submitted_by_session: sessionHash,
     status: "pending",
   }).select().single();
 

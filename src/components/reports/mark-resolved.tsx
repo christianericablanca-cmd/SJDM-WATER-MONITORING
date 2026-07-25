@@ -13,8 +13,10 @@ export function MarkResolved({ reportId }: { reportId: string }) {
   const { lang } = useLanguage();
   const { success: toastSuccess, error: toastError } = useToast();
   const [loading, setLoading] = useState(false);
+  const [confirm, setConfirm] = useState(false);
 
   const handleResolve = async () => {
+    if (!confirm) { setConfirm(true); return; }
     setLoading(true);
     try {
       const res = await fetch("/api/reports/resolve", {
@@ -33,6 +35,7 @@ export function MarkResolved({ reportId }: { reportId: string }) {
       toastError(t("Failed", lang), t("Connection error. Please try again.", lang));
     } finally {
       setLoading(false);
+      setConfirm(false);
     }
   };
 
@@ -42,10 +45,10 @@ export function MarkResolved({ reportId }: { reportId: string }) {
       <div className="flex-1">
         <strong>{t("Water is back?", lang)}</strong> {t("If your water supply has returned to normal, mark this report as resolved.", lang)}
         <div className="mt-2">
-          <Button size="sm" variant="outline" onClick={handleResolve} disabled={loading}
-            className="h-8 text-xs gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-100">
+          <Button size="sm" variant={confirm ? "default" : "outline"} onClick={handleResolve} disabled={loading}
+            className={confirm ? "h-8 text-xs gap-1.5" : "h-8 text-xs gap-1.5 border-emerald-300 text-emerald-700 hover:bg-emerald-100"}>
             {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-            {t("Mark as Resolved", lang)}
+            {confirm ? t("Confirm?", lang) : t("Mark as Resolved", lang)}
           </Button>
         </div>
       </div>

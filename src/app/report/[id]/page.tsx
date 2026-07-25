@@ -19,13 +19,13 @@ export default async function TrackReportPage({
   }
 
   const supabase = await createServerSupabase();
-  const { data: report } = await supabase
+  const { data: report, error } = await supabase
     .from("reports")
     .select("*")
     .eq("report_id_display", reportId)
-    .single();
+    .maybeSingle();
 
-  if (!report) notFound();
+  if (error || !report) notFound();
 
   return <TrackReportContent report={report} reportId={reportId} />;
 }

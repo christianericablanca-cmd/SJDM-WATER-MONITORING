@@ -8,7 +8,7 @@ export default async function MapPage() {
   const supabase = await createServerSupabase();
 
   const [{ data: reports }, { count: totalApproved }] = await Promise.all([
-    supabase.from("reports").select("*").eq("status", "approved").order("created_at", { ascending: false }),
+    supabase.from("reports").select("*").eq("status", "approved").order("created_at", { ascending: false }).limit(500),
     supabase.from("reports").select("*", { count: "exact", head: true }).eq("status", "approved"),
   ]);
 

@@ -68,7 +68,7 @@ export function BusinessCard({ biz }: { biz: Business }) {
                     {biz.delivery_schedule && <><span className="text-muted-foreground">{t("Schedule", lang)}</span><span>{biz.delivery_schedule}</span></>}
                     {biz.payment_options && <><span className="text-muted-foreground">{t("Payment", lang)}</span><span>{biz.payment_options}</span></>}
                   </div>
-                  {biz.latitude && biz.longitude && (
+                  {biz.latitude != null && biz.longitude != null && (
                     <button onClick={() => setShowMap(true)}
                       className="flex items-center gap-1.5 text-water text-xs font-medium cursor-pointer mt-2">
                       <MapIcon className="h-3.5 w-3.5" /> {t("View on Map", lang)} →

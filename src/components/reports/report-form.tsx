@@ -128,7 +128,7 @@ export function ReportForm() {
     if (!waterProvider) e.water_provider = t("Please select your water provider", lang);
     if (!startDate) e.start_date = t("When did the issue start?", lang);
     if (!startTime) e.start_time = t("What time did it start?", lang);
-    if (!lat || !lng) e.location = t("Pin location is required", lang);
+    if (lat == null || lng == null) e.location = t("Pin location is required", lang);
     if (photo && photo.size > 20 * 1024 * 1024) e.photo = t("Photo must be under 20MB", lang);
     if (photo && !["image/jpeg", "image/png", "image/webp"].includes(photo.type)) {
       e.photo = t("Only JPG, PNG, or WEBP files are allowed", lang);

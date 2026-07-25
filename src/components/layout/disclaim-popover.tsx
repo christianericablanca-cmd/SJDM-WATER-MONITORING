@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import {
   AlertTriangle, Shield, Info, Mail, ExternalLink,
@@ -16,6 +16,7 @@ const STORAGE_KEY = "ww-disclaim-accepted";
 export function DisclaimPopover() {
   const { lang } = useLanguage();
   const [visible, setVisible] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (typeof window !== "undefined" && !localStorage.getItem(STORAGE_KEY)) {
@@ -24,16 +25,35 @@ export function DisclaimPopover() {
     }
   }, []);
 
-  const dismiss = () => {
+  useEffect(() => {
+    if (!visible) return;
+    const el = dialogRef.current;
+    if (!el) return;
+    const prev = document.activeElement as HTMLElement | null;
+    const focusable = el.querySelectorAll<HTMLElement>("button, [href], input, select, textarea, [tabindex]:not([tabindex='-1'])");
+    if (focusable.length > 0) focusable[0].focus();
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setVisible(false); return; }
+      if (e.key !== "Tab" || !focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => { document.removeEventListener("keydown", handleKey); prev?.focus(); };
+  }, [visible]);
+
+  const dismiss = useCallback(() => {
     localStorage.setItem(STORAGE_KEY, "1");
     setVisible(false);
-  };
+  }, []);
 
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-background border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200" role="dialog" aria-modal="true" aria-label="Disclaimer">
+      <div ref={dialogRef} className="bg-background border rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto animate-in zoom-in-95 duration-200">
         <div className="p-5 sm:p-6 space-y-5">
 
           {/* ── Disclaimer Header ── */}

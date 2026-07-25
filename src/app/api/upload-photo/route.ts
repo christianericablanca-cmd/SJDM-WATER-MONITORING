@@ -2,17 +2,16 @@ import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { checkRateLimit, recordRateLimit, getClientIdentifier } from "@/lib/rate-limit";
 
-const MAGIC_BYTES: Record<string, Uint8Array[]> = {
-  "image/jpeg": [new Uint8Array([0xFF, 0xD8, 0xFF])],
-  "image/png": [new Uint8Array([0x89, 0x50, 0x4E, 0x47])],
-  "image/webp": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
+const MAGIC_BYTES: Record<string, ((buffer: Uint8Array) => boolean)[]> = {
+  "image/jpeg": [(b) => b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF],
+  "image/png": [(b) => b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47],
+  "image/webp": [(b) => b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 && b[8] === 0x57 && b[9] === 0x45 && b[10] === 0x42 && b[11] === 0x50],
 };
 
 async function validateImageMagicBytes(file: File): Promise<boolean> {
-  const headerSize = 12;
-  const buffer = new Uint8Array(await file.slice(0, headerSize).arrayBuffer());
-  const allowed = MAGIC_BYTES[file.type] || [];
-  return allowed.some((magic) => magic.every((b, i) => buffer[i] === b));
+  const buffer = new Uint8Array(await file.slice(0, 12).arrayBuffer());
+  const validators = MAGIC_BYTES[file.type] || [];
+  return validators.some((fn) => fn(buffer));
 }
 
 export async function POST(request: Request) {

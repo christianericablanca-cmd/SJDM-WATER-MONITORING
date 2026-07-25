@@ -3,7 +3,7 @@ import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { generateReportId } from "@/lib/utils";
 import type { WaterProvider } from "@/lib/types";
-import { getClientIdentifier } from "@/lib/rate-limit";
+import { getClientIdentifier, checkRateLimit } from "@/lib/rate-limit";
 import { sanitizeString, sanitizeHtml, isValidLat, isValidLng, isValidEnum, toSafeNumber } from "@/lib/sanitize";
 import { BARANGAYS, ISSUE_TYPES, WATER_PROVIDERS, BOUNDARIES_SJDM } from "@/lib/constants";
 
@@ -38,9 +38,18 @@ export async function GET() {
 
 export async function POST(request: Request) {
   const supabase = createServiceClient();
-  const body = await request.json();
+
+  let body;
+  try { body = await request.json(); } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
 
   const identifier = getClientIdentifier(request);
+
+  const { allowed } = await checkRateLimit(identifier, "submit_report", 3, 60);
+  if (!allowed) {
+    return NextResponse.json({ error: "Too many submissions. Please wait before submitting again." }, { status: 429 });
+  }
 
   // Check if this fingerprint already has an active report
   const { data: activeReport } = await supabase
@@ -211,7 +220,7 @@ export async function POST(request: Request) {
         longitude: report.longitude,
         created_at: report.created_at,
       }),
-    }).catch(() => {});
+    })      .catch((err) => console.error("Webhook notification failed:", err));
   }
 
   return NextResponse.json(

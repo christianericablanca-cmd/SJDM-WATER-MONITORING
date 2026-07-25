@@ -53,6 +53,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   water_refilling: "#3b82f6",
   water_tanker: "#f97316",
   water_storage: "#10b981",
+  mineral_water_delivery: "#06b6d4",
   laundry_services: "#a855f7",
 };
 
@@ -80,6 +81,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   water_refilling: "Water Refilling & Delivery",
   water_tanker: "Water Tanker",
   water_storage: "Water Storage",
+  mineral_water_delivery: "Mineral Water Delivery",
   laundry_services: "Laundry",
 };
 
@@ -103,7 +105,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
 }) {
   const mapRef = useRef<L.Map | null>(null);
   const bizIcons = useMemo(() => {
-    const cats = ["water_refilling", "water_tanker", "water_storage", "laundry_services"];
+    const cats = ["water_refilling", "water_tanker", "water_storage", "mineral_water_delivery", "laundry_services"];
     const map: Record<string, L.DivIcon | null> = {};
     for (const c of cats) map[c] = createBusinessIcon(c);
     return map;
@@ -118,7 +120,11 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
       popupAnchor: [0, -28],
     });
   }, []);
-  const [key] = useState(() => `map-${crypto.randomUUID()}`);
+  const [key] = useState(() => {
+    let uid: string;
+    try { uid = crypto.randomUUID(); } catch { uid = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`; }
+    return `map-${uid}`;
+  });
 
   useEffect(() => {
     const map = mapRef.current;
@@ -214,7 +220,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
       {showBusinesses && businessesWithCoords.map((biz) => {
         const bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
         return bizIcon && (
-        <Marker key={biz.id} position={[biz.latitude!, biz.longitude!]} icon={bizIcon}>
+        <Marker key={biz.id} position={[biz.latitude ?? 0, biz.longitude ?? 0]} icon={bizIcon}>
           <Popup>
             <div className="space-y-1.5 min-w-[190px] max-w-[250px]">
               {biz.photo_url && (

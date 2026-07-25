@@ -69,6 +69,7 @@ export const BUSINESS_CATEGORIES: { value: BusinessCategory; label: string }[] =
   { value: "water_refilling", label: "Water Refilling & Delivery" },
   { value: "water_tanker", label: "Private Water Tanker Services" },
   { value: "water_storage", label: "Water Storages" },
+  { value: "mineral_water_delivery", label: "Mineral Water Delivery" },
   { value: "laundry_services", label: "Laundry Services" },
 ];
 
