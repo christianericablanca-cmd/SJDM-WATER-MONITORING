@@ -80,7 +80,7 @@ const TABS: { key: Tab; label: string; icon: LucideIcon }[] = [
 const AdminLocationPicker = dynamic(() => import("@/components/reports/location-picker").then((m) => m.LocationPicker), { ssr: false });
 
 const CAT_LABEL: Record<string, string> = {
-  water_refilling: "Water Refilling & Delivery",
+  water_refilling: "Mineral Water Refilling & Delivery",
   water_tanker: "Water Tanker",
   water_storage: "Water Storage",
   laundry_services: "Laundry",

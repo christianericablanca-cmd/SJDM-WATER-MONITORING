@@ -22,11 +22,11 @@ ON CONFLICT DO NOTHING;
 -- Sample businesses (assistance directory)
 INSERT INTO businesses (name, category, address, barangay, contact, verified, delivery_available, operating_hours) VALUES
 ('AquaPure Refilling Station', 'water_refilling', 'Block 1 Lot 2, Muzon', 'Muzon', '0917-123-1111', true, true, '6:00 AM - 8:00 PM'),
-('ClearWater Delivery', 'mineral_water_delivery', 'Unit 3, Graceville Commercial', 'Graceville', '0918-222-3333', true, true, '7:00 AM - 6:00 PM'),
+('ClearWater Delivery', 'water_refilling', 'Unit 3, Graceville Commercial', 'Graceville', '0918-222-3333', true, true, '7:00 AM - 6:00 PM'),
 ('Tanker Express SJDM', 'water_tanker', 'Sapang Palay Road', 'Sapang Palay', '0920-444-5555', true, true, '24 hours'),
 ('Wash & Fold Laundry', 'laundry_services', 'Minuyan Proper', 'Minuyan', '0921-666-7777', true, true, '8:00 AM - 7:00 PM'),
 ('H2O Station', 'water_refilling', 'Kaypian Market', 'Kaypian', '0923-888-9999', true, false, '6:00 AM - 9:00 PM'),
-('SpringFresh Delivery', 'mineral_water_delivery', 'Tungkong Mangga', 'Tungkong Mangga', '0925-000-1111', true, true, '7:00 AM - 5:00 PM')
+('SpringFresh Delivery', 'water_refilling', 'Tungkong Mangga', 'Tungkong Mangga', '0925-000-1111', true, true, '7:00 AM - 5:00 PM')
 ON CONFLICT DO NOTHING;
 
 -- Welcome announcement

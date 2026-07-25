@@ -53,7 +53,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   water_refilling: "#3b82f6",
   water_tanker: "#f97316",
   water_storage: "#10b981",
-  mineral_water_delivery: "#06b6d4",
   laundry_services: "#a855f7",
 };
 
@@ -78,10 +77,9 @@ function createBusinessIcon(category: string): L.DivIcon | null {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  water_refilling: "Water Refilling & Delivery",
+  water_refilling: "Mineral Water Refilling & Delivery",
   water_tanker: "Water Tanker",
   water_storage: "Water Storage",
-  mineral_water_delivery: "Mineral Water Delivery",
   laundry_services: "Laundry",
 };
 
@@ -105,7 +103,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
 }) {
   const mapRef = useRef<L.Map | null>(null);
   const bizIcons = useMemo(() => {
-    const cats = ["water_refilling", "water_tanker", "water_storage", "mineral_water_delivery", "laundry_services"];
+    const cats = ["water_refilling", "water_tanker", "water_storage", "laundry_services"];
     const map: Record<string, L.DivIcon | null> = {};
     for (const c of cats) map[c] = createBusinessIcon(c);
     return map;

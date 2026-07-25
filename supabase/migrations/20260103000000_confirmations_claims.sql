@@ -14,7 +14,7 @@ CREATE INDEX IF NOT EXISTS idx_confirmations_session ON report_confirmations(ses
 CREATE TABLE IF NOT EXISTS business_claims (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  category TEXT NOT NULL CHECK (category IN ('water_refilling','mineral_water_delivery','water_tanker','laundry_services')),
+  category TEXT NOT NULL CHECK (category IN ('water_refilling','water_tanker','laundry_services')),
   address TEXT NOT NULL,
   barangay TEXT NOT NULL,
   contact TEXT,

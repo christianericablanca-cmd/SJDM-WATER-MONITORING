@@ -192,8 +192,8 @@ export const dict: Record<string, Record<string, string>> = {
   "Find alternatives during water interruptions — refilling stations, delivery services, laundry, and more.":
     { tl: "Maghanap ng alternatibo habang may water interruption — refilling stations, delivery services, laundry, at iba pa." },
   "Add Your Business": { tl: "Idagdag ang Iyong Negosyo" },
-  "Water Refilling": { tl: "Water Refilling" },
-  "Mineral Water Delivery": { tl: "Mineral Water Delivery" },
+  "Water Refilling": { tl: "Mineral Water Refilling & Delivery" },
+
   "Water Tanker": { tl: "Water Tanker" },
   Laundry: { tl: "Laundry" },
   "PRIVATE PAID SERVICE — Not affiliated with the LGU": { tl: "PRIBADONG BAYAD NA SERBISYO — Hindi kaanib sa LGU" },
