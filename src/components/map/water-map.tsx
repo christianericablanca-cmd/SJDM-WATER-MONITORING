@@ -549,7 +549,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
       const idx = coordCount.get(key) ?? 0;
       coordCount.set(key, idx + 1);
       if (idx === 0) return r;
-      const step = idx * 0.000015;
+      const step = idx * 0.0005;
       const angle = idx * 2.399;
       return { ...r, latitude: r.latitude + Math.cos(angle) * step, longitude: r.longitude + Math.sin(angle) * step };
     });
