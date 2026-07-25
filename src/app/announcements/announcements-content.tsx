@@ -31,16 +31,16 @@ function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
   return (
     <Card className="shadow-card border-border/60 overflow-hidden flex flex-col sm:flex-row w-full mx-auto">
       {a.image_url && !imgError ? (
-        <div className="relative w-full sm:w-[320px] lg:w-[400px] shrink-0 bg-muted overflow-hidden" style={{ minHeight: 220 }}>
+        <div className="relative w-full sm:w-[360px] lg:w-[440px] shrink-0 bg-muted overflow-hidden" style={{ minHeight: 280 }}>
           <img
             src={a.image_url}
             alt={a.title}
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-contain p-2"
             onError={() => setImgError(true)}
           />
         </div>
       ) : a.image_url && imgError ? (
-        <div className="w-full sm:w-[320px] lg:w-[400px] shrink-0 bg-muted flex items-center justify-center" style={{ minHeight: 220 }}>
+        <div className="w-full sm:w-[360px] lg:w-[440px] shrink-0 bg-muted flex items-center justify-center" style={{ minHeight: 280 }}>
           <ImageOff className="h-8 w-8 text-muted-foreground/50" />
         </div>
       ) : null}
@@ -57,7 +57,7 @@ function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
             {t("Source:", lang)} {a.source}
           </p>
         )}
-        <p className="text-sm sm:text-base leading-relaxed text-muted-foreground whitespace-pre-line line-clamp-4">{a.content}</p>
+        <p className="text-sm sm:text-base leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
       </div>
     </Card>
   );
