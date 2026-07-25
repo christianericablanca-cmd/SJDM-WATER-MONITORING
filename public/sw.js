@@ -17,11 +17,14 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  if (!event.request.url.startsWith("http")) return;
   event.respondWith(
     fetch(event.request)
       .then((res) => {
-        const clone = res.clone();
-        caches.open(CACHE).then((cache) => cache.put(event.request, clone));
+        if (res.ok) {
+          const clone = res.clone();
+          caches.open(CACHE).then((cache) => cache.put(event.request, clone)).catch(() => {});
+        }
         return res;
       })
       .catch(() => caches.match(event.request)),
