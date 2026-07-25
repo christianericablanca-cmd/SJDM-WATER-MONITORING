@@ -246,7 +246,8 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   // Announcements CRUD
   const [showAnnounceDialog, setShowAnnounceDialog] = useState(false);
   const [editingAnnounce, setEditingAnnounce] = useState<Announcement | null>(null);
-  const [announceForm, setAnnounceForm] = useState({ title: "", content: "", source: "WaterWatch SJDM", is_official: true });
+  const [announceForm, setAnnounceForm] = useState({ title: "", content: "", source: "WaterWatch SJDM", is_official: true, image_url: "" });
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [savingAnnounce, setSavingAnnounce] = useState(false);
   const [announceSearch, setAnnounceSearch] = useState("");
 
@@ -411,7 +412,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     setUpdating(null);
   };
 
-  const resetAnnounceForm = () => setAnnounceForm({ title: "", content: "", source: "WaterWatch SJDM", is_official: true });
+  const resetAnnounceForm = () => setAnnounceForm({ title: "", content: "", source: "WaterWatch SJDM", is_official: true, image_url: "" });
 
   const openNewAnnounce = () => {
     setEditingAnnounce(null);
@@ -421,7 +422,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
 
   const openEditAnnounce = (a: Announcement) => {
     setEditingAnnounce(a);
-    setAnnounceForm({ title: a.title, content: a.content, source: a.source, is_official: a.is_official });
+    setAnnounceForm({ title: a.title, content: a.content, source: a.source, is_official: a.is_official, image_url: a.image_url ?? "" });
     setShowAnnounceDialog(true);
   };
 
@@ -433,10 +434,12 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     setSavingAnnounce(true);
     try {
       const isEdit = !!editingAnnounce;
+      const payload: Record<string, unknown> = isEdit ? { id: editingAnnounce.id, ...announceForm } : { ...announceForm };
+      if (!payload.image_url) payload.image_url = null;
       const res = await fetch("/api/admin/announcements", {
         method: isEdit ? "PUT" : "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(isEdit ? { id: editingAnnounce.id, ...announceForm } : announceForm),
+        body: JSON.stringify(payload),
       });
       if (!res.ok) throw new Error((await res.json()).error || "Something went wrong");
       toastSuccess(isEdit ? "Updated" : "Created", `Announcement has been ${isEdit ? "updated" : "created"}.`);
@@ -463,6 +466,27 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
       toastError("Delete failed", "Could not delete announcement.");
     }
     setUpdating(null);
+  };
+
+  const handleUploadImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 20 * 1024 * 1024) {
+      toastError("File too large", "Maximum size is 20MB.");
+      return;
+    }
+    setUploadingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload-photo", { method: "POST", body: fd });
+      if (!res.ok) throw new Error((await res.json()).error || "Upload failed");
+      const { url } = await res.json();
+      setAnnounceForm((p) => ({ ...p, image_url: url }));
+    } catch (err: unknown) {
+      toastError("Upload failed", err instanceof Error ? err.message : "Could not upload image.");
+    }
+    setUploadingImage(false);
   };
 
   const resetContactForm = () => setContactForm({ name: "", category: "", phone: "", address: "", website: "", messenger: "" });
@@ -1909,6 +1933,25 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
               <Label>Content *</Label>
               <Textarea value={announceForm.content} onChange={(e) => setAnnounceForm({ ...announceForm, content: e.target.value })}
                 rows={4} className="text-sm resize-none" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Image <span className="text-muted-foreground text-xs">(optional)</span></Label>
+              <div className="flex items-center gap-2">
+                <Input id="announce-image" type="file" accept="image/*"
+                  onChange={handleUploadImage}
+                  disabled={uploadingImage}
+                  className="text-sm file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border file:border-water/30 file:text-xs file:bg-water-muted file:text-water-dark hover:file:bg-water-muted/80" />
+                {uploadingImage && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+              </div>
+              {announceForm.image_url && (
+                <div className="relative mt-1.5">
+                  <img src={announceForm.image_url} alt="" className="w-full h-32 object-cover rounded-lg border" />
+                  <button type="button" onClick={() => setAnnounceForm((p) => ({ ...p, image_url: "" }))}
+                    className="absolute top-1 right-1 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center text-xs hover:bg-black/70">
+                    ✕
+                  </button>
+                </div>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Source</Label>

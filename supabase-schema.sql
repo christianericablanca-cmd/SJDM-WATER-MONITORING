@@ -80,7 +80,8 @@ CREATE TABLE announcements (
   source TEXT NOT NULL DEFAULT 'WaterWatch SJDM',
   is_official BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  image_url TEXT
 );
 
 CREATE INDEX idx_announcements_is_official ON announcements(is_official);

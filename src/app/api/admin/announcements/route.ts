@@ -30,6 +30,7 @@ export async function POST(request: Request) {
   }
 
   const svc = createServiceClient();
+  const image_url = body.image_url ? sanitizeString(body.image_url, 500) : null;
   const { data, error } = await svc
     .from("announcements")
     .insert({
@@ -37,6 +38,7 @@ export async function POST(request: Request) {
       content,
       source: sanitizeString(body.source, 100) || "WaterWatch SJDM",
       is_official: body.is_official ?? true,
+      image_url,
       created_by: user.id,
     })
     .select()
@@ -65,6 +67,7 @@ export async function PUT(request: Request) {
   if (body.content !== undefined) updates.content = sanitizeHtml(body.content, 5000);
   if (body.source !== undefined) updates.source = sanitizeString(body.source, 100);
   if (body.is_official !== undefined) updates.is_official = body.is_official;
+  if (body.image_url !== undefined) updates.image_url = body.image_url ? sanitizeString(body.image_url, 500) : null;
 
   const { data, error } = await svc
     .from("announcements")

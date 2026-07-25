@@ -45,7 +45,8 @@ CREATE TABLE IF NOT EXISTS announcements (
   source TEXT NOT NULL DEFAULT 'WaterWatch SJDM',
   is_official BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL
+  created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  image_url TEXT
 );
 
 CREATE TABLE IF NOT EXISTS emergency_contacts (

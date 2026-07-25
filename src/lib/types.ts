@@ -118,6 +118,7 @@ export interface Announcement {
   source: string;
   is_official: boolean;
   created_at: string;
+  image_url?: string | null;
 }
 
 export interface EmergencyContact {

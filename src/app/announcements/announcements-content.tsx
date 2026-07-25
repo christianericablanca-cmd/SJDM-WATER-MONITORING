@@ -2,22 +2,64 @@
 
 import { t } from "@/lib/i18n";
 import { useLanguage } from "@/components/ui/language-provider";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
-import { Megaphone, Building2 } from "lucide-react";
+import { Megaphone, Building2, ImageOff } from "lucide-react";
+import { useState } from "react";
 
 interface Announcement {
-  id: number;
+  id: string;
   title: string;
   content: string;
   source: string;
   is_official: boolean;
   created_at: string;
+  image_url?: string | null;
 }
 
 interface AnnouncementsContentProps {
   announcements: Announcement[];
+}
+
+function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
+  const [imgError, setImgError] = useState(false);
+
+  return (
+    <Card className="shadow-card border-border/60 overflow-hidden flex flex-col">
+      {a.image_url && !imgError ? (
+        <div className="relative w-full aspect-[16/9] bg-muted overflow-hidden">
+          <img
+            src={a.image_url}
+            alt={a.title}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        </div>
+      ) : a.image_url && imgError ? (
+        <div className="w-full aspect-[16/9] bg-muted flex items-center justify-center">
+          <ImageOff className="h-8 w-8 text-muted-foreground/50" />
+        </div>
+      ) : null}
+      <CardHeader className="pb-2">
+        <div className="flex items-center gap-2 mb-1.5">
+          <Badge variant={a.is_official ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+            {a.is_official ? t("Official", lang) : t("Community", lang)}
+          </Badge>
+          <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
+        </div>
+        <CardTitle className="text-base leading-snug">{a.title}</CardTitle>
+        {a.is_official && (
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {t("Source:", lang)} {a.source}
+          </p>
+        )}
+      </CardHeader>
+      <CardContent className="flex-1 flex flex-col">
+        <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function AnnouncementsContent({ announcements }: AnnouncementsContentProps) {
@@ -50,21 +92,9 @@ export function AnnouncementsContent({ announcements }: AnnouncementsContentProp
             <p className="text-sm text-muted-foreground">{t("No official announcements yet.", lang)}</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {official.map((a) => (
-              <Card key={a.id} className="shadow-card border-border/60">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Badge variant="default" className="text-[10px] px-1.5 py-0">{t("Official", lang)}</Badge>
-                    <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
-                  </div>
-                  <CardTitle className="text-base">{a.title}</CardTitle>
-                  <CardDescription className="text-xs">{t("Source:", lang)} {a.source}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
-                </CardContent>
-              </Card>
+              <AnnounceCard key={a.id} a={a} lang={lang} />
             ))}
           </div>
         )}
@@ -85,20 +115,9 @@ export function AnnouncementsContent({ announcements }: AnnouncementsContentProp
             <p className="text-sm text-muted-foreground">{t("No community announcements yet.", lang)}</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {community.map((a) => (
-              <Card key={a.id} className="shadow-card border-border/60">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("Community", lang)}</Badge>
-                    <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
-                  </div>
-                  <CardTitle className="text-base">{a.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
-                </CardContent>
-              </Card>
+              <AnnounceCard key={a.id} a={a} lang={lang} />
             ))}
           </div>
         )}
