@@ -29,9 +29,9 @@ function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
   const [imgError, setImgError] = useState(false);
 
   return (
-    <Card className="shadow-card border-border/60 overflow-hidden flex flex-col sm:flex-row">
+    <Card className="shadow-card border-border/60 overflow-hidden flex flex-col sm:flex-row w-full mx-auto">
       {a.image_url && !imgError ? (
-        <div className="relative w-full sm:w-[200px] lg:w-[280px] shrink-0 bg-muted overflow-hidden" style={{ minHeight: 160 }}>
+        <div className="relative w-full sm:w-[320px] lg:w-[400px] shrink-0 bg-muted overflow-hidden" style={{ minHeight: 220 }}>
           <img
             src={a.image_url}
             alt={a.title}
@@ -40,28 +40,24 @@ function AnnounceCard({ a, lang }: { a: Announcement; lang: "en" | "tl" }) {
           />
         </div>
       ) : a.image_url && imgError ? (
-        <div className="w-full sm:w-[200px] lg:w-[280px] shrink-0 bg-muted flex items-center justify-center" style={{ minHeight: 160 }}>
+        <div className="w-full sm:w-[320px] lg:w-[400px] shrink-0 bg-muted flex items-center justify-center" style={{ minHeight: 220 }}>
           <ImageOff className="h-8 w-8 text-muted-foreground/50" />
         </div>
       ) : null}
-      <div className="flex flex-col flex-1 min-w-0">
-        <CardHeader className="pb-2">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Badge variant={a.is_official ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
-              {a.is_official ? t("Official", lang) : t("Community", lang)}
-            </Badge>
-            <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
-          </div>
-          <CardTitle className="text-base leading-snug">{a.title}</CardTitle>
-          {a.is_official && (
-            <p className="text-xs text-muted-foreground mt-0.5">
-              {t("Source:", lang)} {a.source}
-            </p>
-          )}
-        </CardHeader>
-        <CardContent className="flex-1 flex flex-col">
-          <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-line">{a.content}</p>
-        </CardContent>
+      <div className="flex flex-col flex-1 min-w-0 px-4 sm:px-6 py-4 justify-center">
+        <div className="flex items-center gap-2 mb-2">
+          <Badge variant={a.is_official ? "default" : "secondary"} className="text-[11px] px-2 py-0.5">
+            {a.is_official ? t("Official", lang) : t("Community", lang)}
+          </Badge>
+          <span className="text-xs text-muted-foreground">{formatDate(a.created_at)}</span>
+        </div>
+        <h3 className="text-lg sm:text-xl font-semibold leading-snug mb-2">{a.title}</h3>
+        {a.is_official && (
+          <p className="text-xs text-muted-foreground mb-2">
+            {t("Source:", lang)} {a.source}
+          </p>
+        )}
+        <p className="text-sm sm:text-base leading-relaxed text-muted-foreground whitespace-pre-line line-clamp-4">{a.content}</p>
       </div>
     </Card>
   );
@@ -101,8 +97,8 @@ export function AnnouncementsContent({ announcements: initial, total, pageSize }
         </div>
       </div>
 
-      <section>
-        <div className="flex items-center gap-3 mb-4">
+      <section className="max-w-5xl mx-auto">
+        <div className="flex items-center gap-3 mb-5">
           <div className="w-9 h-9 rounded-xl bg-water-muted flex items-center justify-center">
             <Building2 className="h-4.5 w-4.5 text-water" />
           </div>
@@ -116,7 +112,7 @@ export function AnnouncementsContent({ announcements: initial, total, pageSize }
             <p className="text-sm text-muted-foreground">{t("No official announcements yet.", lang)}</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-6">
             {official.map((a) => (
               <AnnounceCard key={a.id} a={a} lang={lang} />
             ))}
@@ -124,8 +120,8 @@ export function AnnouncementsContent({ announcements: initial, total, pageSize }
         )}
       </section>
 
-      <section>
-        <div className="flex items-center gap-3 mb-4">
+      <section className="max-w-5xl mx-auto">
+        <div className="flex items-center gap-3 mb-5">
           <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center">
             <Megaphone className="h-4.5 w-4.5 text-muted-foreground" />
           </div>
@@ -139,7 +135,7 @@ export function AnnouncementsContent({ announcements: initial, total, pageSize }
             <p className="text-sm text-muted-foreground">{t("No community announcements yet.", lang)}</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="space-y-6">
             {community.map((a) => (
               <AnnounceCard key={a.id} a={a} lang={lang} />
             ))}
