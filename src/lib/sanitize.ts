@@ -1,5 +1,17 @@
-export function sanitizeString(input: string, maxLength = 500): string {
+function decodeHtmlEntities(input: string): string {
   return input
+    .replace(/&#(\d+);/g, (_, d) => String.fromCharCode(parseInt(d, 10)))
+    .replace(/&#[xX]([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, "/");
+}
+
+export function sanitizeString(input: string, maxLength = 500): string {
+  return decodeHtmlEntities(input)
     .replace(/[<>]/g, "")
     .replace(/javascript:/gi, "")
     .replace(/on\w+=/gi, "")

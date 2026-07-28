@@ -1,3 +1,5 @@
+"use client";
+
 export function animateThemeTransition(
   x: number,
   y: number,

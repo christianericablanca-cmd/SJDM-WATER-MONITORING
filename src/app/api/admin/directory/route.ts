@@ -3,12 +3,16 @@ import { createAdminSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { sanitizeString, isValidLat, isValidLng, isValidEnum, toSafeNumber } from "@/lib/sanitize";
 import { BARANGAYS, BUSINESS_CATEGORIES } from "@/lib/constants";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const body = await request.json();
@@ -68,6 +72,9 @@ export async function PUT(request: Request) {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const body = await request.json();

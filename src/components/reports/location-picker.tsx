@@ -200,11 +200,12 @@ export function LocationPicker({ barangay, onPin, lat, lng }: LocationPickerProp
 
   useEffect(() => {
     if (!geojsonData || !barangay) return;
+    if (lat != null && lng != null) return;
     const centroid = computeCentroid(geojsonData, barangay);
     if (centroid) {
       onPin(centroid.lat, centroid.lng);
     }
-  }, [barangay, geojsonData]);
+  }, [barangay, geojsonData, lat, lng]);
 
   useEffect(() => {
     fetch("/data/sjdm-barangays.geojson")

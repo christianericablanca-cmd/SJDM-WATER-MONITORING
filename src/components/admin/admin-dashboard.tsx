@@ -156,10 +156,23 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   const [editCoordDraft, setEditCoordDraft] = useState("");
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      router.refresh();
-    }, 15000);
-    return () => clearInterval(interval);
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const startPolling = () => {
+      interval = setInterval(() => router.refresh(), 15000);
+    };
+    const stopPolling = () => {
+      if (interval) { clearInterval(interval); interval = null; }
+    };
+    const onVisibilityChange = () => {
+      if (document.hidden) stopPolling();
+      else if (!interval) startPolling();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    startPolling();
+    return () => {
+      stopPolling();
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [router]);
 
   useEffect(() => {

@@ -46,6 +46,9 @@ export function Turnstile({ siteKey, onVerify, onExpire, onError, theme = "light
     const container = containerRef.current;
     if (!container) return;
 
+    const pollIntervals: ReturnType<typeof setInterval>[] = [];
+    const pollTimeouts: ReturnType<typeof setTimeout>[] = [];
+
     const scriptExists = document.querySelector<HTMLScriptElement>('script[src*="turnstile/v0/api.js"]');
     if (!scriptExists) {
       const script = document.createElement("script");
@@ -67,37 +70,28 @@ export function Turnstile({ siteKey, onVerify, onExpire, onError, theme = "light
       });
     };
 
-    const checkLoaded = () => {
-      if (window.turnstile) {
-        renderWidget();
-      } else {
-        // Wait for the script to load
-        const interval = setInterval(() => {
-          if (window.turnstile) {
-            clearInterval(interval);
-            renderWidget();
-          }
-        }, 200);
-        // Cleanup interval after 15s
-        setTimeout(() => clearInterval(interval), 15000);
-      }
-    };
-
-    if (scriptExists) {
-      checkLoaded();
-    } else {
-      // Script was just created — wait for it to load
+    const poll = () => {
       const interval = setInterval(() => {
         if (window.turnstile) {
           clearInterval(interval);
           renderWidget();
         }
       }, 200);
-      setTimeout(() => clearInterval(interval), 15000);
+      pollIntervals.push(interval);
+      const timeout = setTimeout(() => clearInterval(interval), 15000);
+      pollTimeouts.push(timeout);
+    };
+
+    if (window.turnstile) {
+      renderWidget();
+    } else {
+      poll();
     }
 
     return () => {
       renderedRef.current = false;
+      pollIntervals.forEach(clearInterval);
+      pollTimeouts.forEach(clearTimeout);
       if (widgetIdRef.current) {
         try { window.turnstile.remove(widgetIdRef.current); } catch {}
         widgetIdRef.current = null;

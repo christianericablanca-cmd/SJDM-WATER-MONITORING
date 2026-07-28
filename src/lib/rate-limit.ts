@@ -24,11 +24,23 @@ export async function checkRateLimit(
 }
 
 export async function recordRateLimit(identifier: string, action = "submit_report") {
-  const supabase = createServiceClient();
-  await supabase.from("rate_limits").insert({
-    identifier,
-    action,
-  });
+  try {
+    const supabase = createServiceClient();
+    await supabase.from("rate_limits").insert({
+      identifier,
+      action,
+    });
+  } catch (err) {
+    console.error("rate-limit: failed to record", err);
+  }
+}
+
+export async function checkAdminRateLimit(request: Request): Promise<boolean> {
+  const identifier = getClientIdentifier(request);
+  const { allowed } = await checkRateLimit(identifier, "admin_action", 30, 1);
+  if (!allowed) return false;
+  await recordRateLimit(identifier, "admin_action");
+  return true;
 }
 
 export function getClientIdentifier(request: Request): string {

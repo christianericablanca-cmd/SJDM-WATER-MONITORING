@@ -225,6 +225,7 @@ export function ReportForm() {
         return;
       }
 
+      setCaptchaToken(null);
       toastSuccess(t("Report submitted!", lang), t("Your report ID is", lang) + " " + body.report_id_display + ". " + t("It's now subject for validation.", lang));
       setSubmitted(body.report_id_display);
       router.refresh();

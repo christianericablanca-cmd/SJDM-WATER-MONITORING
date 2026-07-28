@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   try {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const { searchParams } = new URL(request.url);

@@ -12,10 +12,10 @@ export function RainIndicator() {
   useEffect(() => {
     const now = Date.now();
     if (now - fetchedRef.current < 300_000) { setLoading(false); return; }
-    fetchedRef.current = now;
     fetch("/api/weather")
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((d) => {
+        fetchedRef.current = now;
         setRain(typeof d.probability === "number" ? d.probability : null);
         setTemp(typeof d.temp === "number" ? d.temp : null);
         setCondition(typeof d.condition === "string" ? d.condition : null);

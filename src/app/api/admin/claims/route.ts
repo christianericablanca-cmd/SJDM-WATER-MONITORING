@@ -1,6 +1,7 @@
 ﻿import { createServerSupabase, createAdminSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { NextResponse } from "next/server";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import type { Barangay } from "@/lib/types";
 
 // Fallback coordinates from src/lib/constants.ts (barangay centers)
@@ -51,11 +52,14 @@ const BARANGAY_COORDS: Partial<Record<Barangay, { lat: number; lng: number }>> =
   "Tungkong Mangga": { lat: 14.829, lng: 121.029 },
 };
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const supabase = createServiceClient();
@@ -77,6 +81,9 @@ export async function PATCH(request: Request) {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const body = await request.json();
@@ -106,18 +113,19 @@ export async function PATCH(request: Request) {
   }
 
   if (action === "approved") {
-    const { data: existing } = await svc.from("businesses").select("id").match({ name: claim.name, barangay: claim.barangay }).maybeSingle();
-    if (!existing) {
-      const barCoords = BARANGAY_COORDS[claim.barangay as Barangay];
-      await svc.from("businesses").insert({
+    const barCoords = BARANGAY_COORDS[claim.barangay as Barangay];
+    const { data: inserted } = await svc
+      .from("businesses")
+      .insert({
         name: claim.name, category: claim.category, address: claim.address, barangay: claim.barangay,
         contact: claim.contact, facebook: claim.facebook, delivery_available: claim.delivery_available,
         operating_hours: claim.operating_hours, coverage_area: claim.coverage_area, estimated_fee: claim.estimated_fee,
         latitude: claim.latitude ?? barCoords?.lat ?? null,
         longitude: claim.longitude ?? barCoords?.lng ?? null,
         photo_url: claim.photo_url, verified: true, disabled: false,
-      });
-    }
+      })
+      .select("id")
+      .maybeSingle();
   } else if (action === "rejected") {
     await svc.from("businesses").delete().match({ name: claim.name, barangay: claim.barangay });
   } else if (action === "disable") {

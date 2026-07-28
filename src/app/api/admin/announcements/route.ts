@@ -2,6 +2,7 @@
 import { createServerSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { sanitizeString, sanitizeHtml } from "@/lib/sanitize";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 
 async function checkAdmin() {
   const supabase = await createServerSupabase();
@@ -20,6 +21,9 @@ export async function POST(request: Request) {
   const user = await checkAdmin();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const body = await request.json();
@@ -55,6 +59,9 @@ export async function PUT(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
 
   const body = await request.json();
   if (!body.id) {
@@ -86,6 +93,9 @@ export async function DELETE(request: Request) {
   const user = await checkAdmin();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const body = await request.json();

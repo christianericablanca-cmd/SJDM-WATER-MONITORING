@@ -166,9 +166,9 @@ export function CommunityContent({ initialMessages }: { initialMessages: ChatMes
     const supabase = createClient();
     const channel = supabase
       .channel("chat-sjdm")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "chat_messages", filter: `room=eq.${room}` }, (payload) => {
         const msg = payload.new as any;
-        if (msg.deleted || msg.room !== room) return;
+        if (msg.deleted) return;
         setMessages((prev) => (prev.some((p) => p.id === msg.id) ? prev : [...prev, msg as ChatMessage]));
       })
       .subscribe();

@@ -127,13 +127,10 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
 
   useEffect(() => {
     const map = mapRef.current;
-    if (map) {
-      setTimeout(() => { map.invalidateSize(); }, 200);
-    }
+    const timer = map ? setTimeout(() => { map.invalidateSize(); }, 200) : null;
     return () => {
-      if (map) {
-        map.remove();
-      }
+      if (timer) clearTimeout(timer);
+      if (map) map.remove();
     };
   }, []);
 
@@ -218,7 +215,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
       {showBusinesses && businessesWithCoords.map((biz) => {
         const bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
         return bizIcon && (
-        <Marker key={biz.id} position={[biz.latitude ?? 0, biz.longitude ?? 0]} icon={bizIcon}>
+        <Marker key={biz.id} position={[biz.latitude!, biz.longitude!]} icon={bizIcon}>
           <Popup>
             <div className="space-y-1.5 min-w-[190px] max-w-[250px]">
               {biz.photo_url && (
@@ -398,11 +395,11 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
 
   useEffect(() => {
     knownIdsRef.current = new Set(liveReports.map((r) => r.id));
-  }, [reports]);
+  }, [liveReports]);
 
   useEffect(() => {
     knownBizIdsRef.current = new Set(liveBusinesses.map((b) => b.id));
-  }, [businesses]);
+  }, [liveBusinesses]);
 
   useEffect(() => {
     if (liveCount > 0) {

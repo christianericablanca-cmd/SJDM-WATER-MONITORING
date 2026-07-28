@@ -77,7 +77,7 @@ export function BusinessCard({ biz }: { biz: Business }) {
                 </div>
               </div>
               <div className="absolute inset-0" style={{ backfaceVisibility: "hidden", transform: "rotateY(180deg)" }}>
-                {biz.latitude && biz.longitude ? (
+                {biz.latitude != null && biz.longitude != null ? (
                   <div className="space-y-3">
                     <MiniMap lat={biz.latitude} lng={biz.longitude} name={biz.name} />
                     <button onClick={() => setShowMap(false)}

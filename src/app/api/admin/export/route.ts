@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createAdminSupabase } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { ISSUE_TYPES, WATER_PROVIDERS } from "@/lib/constants";
+import { checkAdminRateLimit } from "@/lib/rate-limit";
 import * as XLSX from "xlsx";
 
 export async function GET(request: Request) {
@@ -9,6 +10,9 @@ export async function GET(request: Request) {
     await createAdminSupabase();
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await checkAdminRateLimit(request))) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
   }
 
   const { searchParams } = new URL(request.url);
