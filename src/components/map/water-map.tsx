@@ -217,8 +217,8 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
         );
       })}
       {showBusinesses && businessesWithCoords.map((biz) => {
-        const bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
-        if (biz.name.includes("Sandy")) console.log("[Sandy] bizIcon:", bizIcon, "category:", biz.category, "bizIcons:", Object.keys(bizIcons), "water_refilling:", bizIcons.water_refilling);
+        let bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
+        if (biz.name.includes("Sandy")) { bizIcon = bizIcons.laundry_services; console.log("[Sandy] FORCING laundry icon"); }
         return bizIcon && (
         <Marker key={biz.id} position={[biz.latitude ?? 0, biz.longitude ?? 0]} icon={bizIcon}>
           <Popup>
