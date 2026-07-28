@@ -141,6 +141,20 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
   });
   const [coordDraft, setCoordDraft] = useState("");
 
+  // Edit business dialog
+  const [showEditBiz, setShowEditBiz] = useState(false);
+  const [editingBiz, setEditingBiz] = useState<Business | null>(null);
+  const [savingEditBiz, setSavingEditBiz] = useState(false);
+  const [editBizPhoto, setEditBizPhoto] = useState<File | null>(null);
+  const [editBizPhotoPreview, setEditBizPhotoPreview] = useState<string | null>(null);
+  const [editBizForm, setEditBizForm] = useState({
+    name: "", category: "", address: "", barangay: "",
+    contact: "", facebook: "", delivery_available: false,
+    openTime: "", closeTime: "", coverage_area: "", estimated_fee: "",
+    latitude: "", longitude: "",
+  });
+  const [editCoordDraft, setEditCoordDraft] = useState("");
+
   useEffect(() => {
     const interval = setInterval(() => {
       router.refresh();
@@ -585,6 +599,58 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
     } finally {
       setSavingBiz(false);
     }
+  };
+
+  const openEditBiz = (biz: Business) => {
+    setEditingBiz(biz);
+    const openTime = biz.operating_hours?.split(" — ")[0] || "";
+    const closeTime = biz.operating_hours?.split(" — ")[1] || "";
+    setEditBizForm({
+      name: biz.name, category: biz.category, address: biz.address, barangay: biz.barangay,
+      contact: biz.contact || "", facebook: biz.facebook || "", delivery_available: biz.delivery_available ?? false,
+      openTime, closeTime, coverage_area: biz.coverage_area || "", estimated_fee: biz.estimated_fee || "",
+      latitude: biz.latitude != null ? String(biz.latitude) : "", longitude: biz.longitude != null ? String(biz.longitude) : "",
+    });
+    setEditCoordDraft(biz.latitude != null && biz.longitude != null ? `${biz.latitude.toFixed(6)}, ${biz.longitude.toFixed(6)}` : "");
+    setEditBizPhoto(null);
+    setEditBizPhotoPreview(biz.photo_url || null);
+    setShowEditBiz(true);
+  };
+
+  const handleSaveEditBiz = async () => {
+    if (!editBizForm.name || !editBizForm.category || !editBizForm.address || !editBizForm.barangay) {
+      toastError("Missing fields", "Name, category, address, and barangay are required.");
+      return;
+    }
+    setSavingEditBiz(true);
+    try {
+      let photoUrl = editingBiz?.photo_url || null;
+      if (editBizPhoto) {
+        const formData = new FormData();
+        formData.append("file", editBizPhoto);
+        const uploadRes = await fetch("/api/upload-photo", { method: "POST", body: formData });
+        const uploadData = await uploadRes.json();
+        if (!uploadRes.ok) throw new Error(uploadData.error || "Photo upload failed");
+        photoUrl = uploadData.url;
+      }
+
+      const body: Record<string, unknown> = { ...editBizForm, id: editingBiz!.id, operating_hours: editBizForm.openTime && editBizForm.closeTime ? `${editBizForm.openTime} — ${editBizForm.closeTime}` : "", photo_url: photoUrl };
+      body.latitude = editBizForm.latitude ? parseFloat(editBizForm.latitude) : null;
+      body.longitude = editBizForm.longitude ? parseFloat(editBizForm.longitude) : null;
+      const res = await fetch("/api/admin/directory", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || "Something went wrong");
+      toastSuccess("Updated", `${editBizForm.name} has been updated.`);
+      setShowEditBiz(false);
+      setEditingBiz(null);
+      router.refresh();
+    } catch (err: unknown) {
+      toastError("Failed to update", err instanceof Error ? err.message : "Something went wrong");
+    }
+    setSavingEditBiz(false);
   };
 
   const allFiltered = reports.filter((r) => {
@@ -1393,6 +1459,138 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                   </div>
                 </DialogContent>
               </Dialog>
+
+              {/* Edit Business dialog */}
+              <Dialog open={showEditBiz} onOpenChange={(open) => { if (!open) { setShowEditBiz(false); setEditingBiz(null); } }}>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle className="text-base">Edit Business</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-3 pt-2">
+                    <div className="space-y-1.5">
+                      <Label>Business Name *</Label>
+                      <Input value={editBizForm.name} onChange={(e) => setEditBizForm({ ...editBizForm, name: e.target.value })} className="h-9 text-sm" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Category *</Label>
+                      <Select value={editBizForm.category} onValueChange={(v) => setEditBizForm({ ...editBizForm, category: v })}>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select category" /></SelectTrigger>
+                        <SelectContent>
+                          {BUSINESS_CATEGORIES.map((c) => (
+                            <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Address *</Label>
+                      <Input value={editBizForm.address} onChange={(e) => setEditBizForm({ ...editBizForm, address: e.target.value })} className="h-9 text-sm" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Barangay *</Label>
+                      <Select value={editBizForm.barangay} onValueChange={(v) => setEditBizForm({ ...editBizForm, barangay: v })}>
+                        <SelectTrigger className="h-9 text-sm"><SelectValue placeholder="Select barangay" /></SelectTrigger>
+                        <SelectContent>
+                          {BARANGAYS.map((b) => (
+                            <SelectItem key={b} value={b}>{b}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Contact Number</Label>
+                      <Input value={editBizForm.contact} onChange={(e) => setEditBizForm({ ...editBizForm, contact: e.target.value })} className="h-9 text-sm" placeholder="e.g. 0917-xxx-xxxx" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Facebook Page URL</Label>
+                      <Input value={editBizForm.facebook} onChange={(e) => setEditBizForm({ ...editBizForm, facebook: e.target.value })} className="h-9 text-sm" placeholder="https://facebook.com/..." />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Operating Hours</Label>
+                      <div className="flex items-center gap-2">
+                        <input type="time" value={editBizForm.openTime} onChange={(e) => setEditBizForm({ ...editBizForm, openTime: e.target.value })}
+                          className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                        <span className="text-muted-foreground text-xs">—</span>
+                        <input type="time" value={editBizForm.closeTime} onChange={(e) => setEditBizForm({ ...editBizForm, closeTime: e.target.value })}
+                          className="flex-1 h-9 rounded-md border border-input bg-background px-3 text-xs focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Coverage Area</Label>
+                      <Input value={editBizForm.coverage_area} onChange={(e) => setEditBizForm({ ...editBizForm, coverage_area: e.target.value })} className="h-9 text-sm" placeholder="e.g. SJDM, Bulacan" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Estimated Fee</Label>
+                      <Input value={editBizForm.estimated_fee} onChange={(e) => setEditBizForm({ ...editBizForm, estimated_fee: e.target.value })} className="h-9 text-sm" placeholder="e.g. ₱150 - ₱300" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Map Location</Label>
+                      <Input
+                        placeholder="Or paste coordinates (e.g. 14.846927, 121.047377)"
+                        value={editCoordDraft}
+                        onChange={(e) => {
+                          setEditCoordDraft(e.target.value);
+                          const val = e.target.value.trim();
+                          const match = val.match(/^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/);
+                          if (match) {
+                            const lat = parseFloat(match[1]);
+                            const lng = parseFloat(match[2]);
+                            if (lat >= -90 && lat <= 90 && lng >= -180 && lng <= 180) {
+                              setEditBizForm({ ...editBizForm, latitude: String(lat), longitude: String(lng) });
+                            }
+                          }
+                        }}
+                        className="h-9 text-sm mb-1"
+                      />
+                      <div className="h-[250px] rounded-lg border overflow-hidden">
+                        <AdminLocationPicker
+                          barangay={editBizForm.barangay}
+                          lat={editBizForm.latitude ? parseFloat(editBizForm.latitude) : null}
+                          lng={editBizForm.longitude ? parseFloat(editBizForm.longitude) : null}
+                          onPin={(lat, lng) => {
+                            setEditBizForm({ ...editBizForm, latitude: String(lat), longitude: String(lng) });
+                            setEditCoordDraft(`${lat.toFixed(6)}, ${lng.toFixed(6)}`);
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Photo</Label>
+                      <div className="flex items-center gap-3">
+                        <Input type="file" accept=".jpg,.jpeg,.png,.webp" className="h-9 text-sm flex-1"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0] || null;
+                            setEditBizPhoto(file);
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onload = () => setEditBizPhotoPreview(reader.result as string);
+                              reader.readAsDataURL(file);
+                            } else {
+                              setEditBizPhotoPreview(editingBiz?.photo_url || null);
+                            }
+                          }}
+                        />
+                        {editBizPhotoPreview && (
+                          <button type="button" onClick={() => { setEditBizPhoto(null); setEditBizPhotoPreview(null); }}
+                            className="text-xs text-muted-foreground hover:text-destructive shrink-0">Remove</button>
+                        )}
+                      </div>
+                      {editBizPhotoPreview && (
+                        <Image src={editBizPhotoPreview} alt="Preview" width={400} height={200} className="w-full h-32 object-cover rounded-lg border" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input type="checkbox" id="edit-delivery" checked={editBizForm.delivery_available}
+                        onChange={(e) => setEditBizForm({ ...editBizForm, delivery_available: e.target.checked })}
+                        className="h-4 w-4 rounded border-border text-water focus:ring-water" />
+                      <Label htmlFor="edit-delivery" className="text-sm">Delivery Available</Label>
+                    </div>
+                    <Button onClick={handleSaveEditBiz} disabled={savingEditBiz} className="w-full gap-1.5">
+                      {savingEditBiz ? <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</> : "Save Changes"}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {filteredBizAll.length === 0 ? (
@@ -1410,9 +1608,12 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                         <p className="text-[10px] font-semibold truncate">{biz.name}</p>
                         <p className="text-[9px] text-muted-foreground truncate">{biz.barangay} · {CAT_LABEL[biz.category] || biz.category} · {biz.contact || "—"}</p>
                       </div>
-                      <Badge variant={biz.verified ? "success" : "outline"} className="text-[8px] px-1 py-0 shrink-0">
-                        {biz.verified ? "V" : "C"}
-                      </Badge>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => openEditBiz(biz)} className="text-[10px] text-water hover:text-water-dark p-1" title="Edit"><Pencil className="h-3 w-3" /></button>
+                        <Badge variant={biz.verified ? "success" : "outline"} className="text-[8px] px-1 py-0">
+                          {biz.verified ? "V" : "C"}
+                        </Badge>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1426,6 +1627,7 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                         <th className="text-left px-3 py-2.5 font-medium hidden lg:table-cell">Category</th>
                         <th className="text-left px-3 py-2.5 font-medium hidden xl:table-cell">Contact</th>
                         <th className="text-left px-3 py-2.5 font-medium">Verified</th>
+                        <th className="text-right px-3 py-2.5 font-medium">Actions</th>
                       </tr>
                     </thead>
                      <tbody className="divide-y">
@@ -1439,6 +1641,9 @@ export function AdminDashboard({ reports, businesses, announcements, pendingCoun
                             <Badge variant={biz.verified ? "success" : "outline"} className="text-[9px] px-1.5 py-0">
                               {biz.verified ? "Yes" : "No"}
                             </Badge>
+                          </td>
+                          <td className="px-3 py-3 text-right">
+                            <button onClick={() => openEditBiz(biz)} className="text-water hover:text-water-dark p-1" title="Edit"><Pencil className="h-3.5 w-3.5" /></button>
                           </td>
                         </tr>
                       ))}
