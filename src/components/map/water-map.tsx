@@ -58,10 +58,10 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const CATEGORY_SVG: Record<string, string> = {
-  water_refilling: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
-  water_tanker: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H4v12h1"/><path d="M14 9h4l3 3v5h-1"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
-  water_storage: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c0 1.1 4.5 2 10 2s10-.9 10-2"/><path d="M2 8v8c0 1.1 4.5 2 10 2s10-.9 10-2V8"/><path d="M2 12c0 1.1 4.5 2 10 2s10-.9 10-2"/></svg>`,
-  laundry_services: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="11" r="3"/><circle cx="9" cy="7" r="1"/></svg>`,
+  water_refilling: `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" stroke="none"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>`,
+  water_tanker: `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 17h4V5H4v12h1"/><path d="M14 9h4l3 3v5h-1"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>`,
+  water_storage: `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8c0 1.1 4.5 2 10 2s10-.9 10-2"/><path d="M2 8v8c0 1.1 4.5 2 10 2s10-.9 10-2V8"/><path d="M2 12c0 1.1 4.5 2 10 2s10-.9 10-2"/></svg>`,
+  laundry_services: `<svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="12" cy="11" r="3"/><circle cx="9" cy="7" r="1"/></svg>`,
 };
 
 function createBusinessIcon(category: string): L.DivIcon | null {
@@ -70,7 +70,7 @@ function createBusinessIcon(category: string): L.DivIcon | null {
   const svg = CATEGORY_SVG[category] || "";
   return new L.DivIcon({
     className: "custom-marker",
-    html: `<div style="width:24px;height:24px;border-radius:5px;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;padding:3px;">${svg}</div>`,
+    html: `<div style="width:24px;height:24px;border-radius:5px;background:${color};border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;padding:3px;overflow:hidden;">${svg}</div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12],
     popupAnchor: [0, -18],
@@ -102,12 +102,11 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
   onPhotoClick: (report: WaterReport) => void;
   onBusinessPhotoClick: (business: Business) => void;
 }) {
-  console.log("[MapInner] rendering with businessesWithCoords:", businessesWithCoords.length, businessesWithCoords.map(b => b.name));
   const mapRef = useRef<L.Map | null>(null);
   const bizIcons = useMemo(() => {
     const cats = ["water_refilling", "water_tanker", "water_storage", "laundry_services"];
     const map: Record<string, L.DivIcon | null> = {};
-    for (const c of cats) { map[c] = createBusinessIcon(c); console.log("[bizIcons]", c, map[c] ? "created" : "null", typeof map[c]?.options?.html === "string" ? (map[c]?.options?.html as string).slice(0,50) : map[c]?.options?.html); }
+    for (const c of cats) map[c] = createBusinessIcon(c);
     return map;
   }, []);
   const damIcon = useMemo(() => {
@@ -217,8 +216,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
         );
       })}
       {showBusinesses && businessesWithCoords.map((biz) => {
-        let bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
-        if (biz.name.includes("Sandy")) { bizIcon = bizIcons.laundry_services; console.log("[Sandy] FORCING laundry icon"); }
+        const bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
         return bizIcon && (
         <Marker key={biz.id} position={[biz.latitude ?? 0, biz.longitude ?? 0]} icon={bizIcon}>
           <Popup>
@@ -267,8 +265,6 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   const { lang } = useLanguage();
   const [liveReports, setLiveReports] = useState<WaterReport[]>(reports);
   const [liveBusinesses, setLiveBusinesses] = useState<Business[]>(businesses);
-  console.log("[WaterMap] businesses prop:", businesses.length, businesses.map(b => ({ name: b.name, id: b.id, lat: b.latitude, lng: b.longitude })));
-  useEffect(() => { console.log("[WaterMap] liveBusinesses updated:", liveBusinesses.length, liveBusinesses.map(b => b.name)); }, [liveBusinesses]);
   const [search, setSearch] = useState("");
   const [barangayFilter, setBarangayFilter] = useState<string>("all");
   const [issueFilter, setIssueFilter] = useState<string>("all");
@@ -565,9 +561,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   }, [liveReports, barangayFilter, issueFilter, providerFilter, search]);
 
   const businessesWithCoords = useMemo(() => {
-    const filtered = liveBusinesses.filter((b) => b.latitude != null && b.longitude != null);
-    console.log("[WaterMap] businessesWithCoords:", filtered.length, filtered.map(b => b.name));
-    return filtered;
+    return liveBusinesses.filter((b) => b.latitude != null && b.longitude != null);
   }, [liveBusinesses]);
 
   const reportIconCache = useMemo(() => {
