@@ -102,6 +102,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
   onPhotoClick: (report: WaterReport) => void;
   onBusinessPhotoClick: (business: Business) => void;
 }) {
+  console.log("[MapInner] rendering with businessesWithCoords:", businessesWithCoords.length, businessesWithCoords.map(b => b.name));
   const mapRef = useRef<L.Map | null>(null);
   const bizIcons = useMemo(() => {
     const cats = ["water_refilling", "water_tanker", "water_storage", "laundry_services"];
@@ -265,6 +266,8 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   const { lang } = useLanguage();
   const [liveReports, setLiveReports] = useState<WaterReport[]>(reports);
   const [liveBusinesses, setLiveBusinesses] = useState<Business[]>(businesses);
+  console.log("[WaterMap] businesses prop:", businesses.length, businesses.map(b => ({ name: b.name, id: b.id, lat: b.latitude, lng: b.longitude })));
+  useEffect(() => { console.log("[WaterMap] liveBusinesses updated:", liveBusinesses.length, liveBusinesses.map(b => b.name)); }, [liveBusinesses]);
   const [search, setSearch] = useState("");
   const [barangayFilter, setBarangayFilter] = useState<string>("all");
   const [issueFilter, setIssueFilter] = useState<string>("all");
@@ -561,7 +564,9 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
   }, [liveReports, barangayFilter, issueFilter, providerFilter, search]);
 
   const businessesWithCoords = useMemo(() => {
-    return liveBusinesses.filter((b) => b.latitude != null && b.longitude != null);
+    const filtered = liveBusinesses.filter((b) => b.latitude != null && b.longitude != null);
+    console.log("[WaterMap] businessesWithCoords:", filtered.length, filtered.map(b => b.name));
+    return filtered;
   }, [liveBusinesses]);
 
   const reportIconCache = useMemo(() => {
