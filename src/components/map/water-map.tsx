@@ -107,7 +107,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
   const bizIcons = useMemo(() => {
     const cats = ["water_refilling", "water_tanker", "water_storage", "laundry_services"];
     const map: Record<string, L.DivIcon | null> = {};
-    for (const c of cats) map[c] = createBusinessIcon(c);
+    for (const c of cats) { map[c] = createBusinessIcon(c); console.log("[bizIcons]", c, map[c] ? "created" : "null", map[c]?.options?.html?.slice(0,50)); }
     return map;
   }, []);
   const damIcon = useMemo(() => {
@@ -218,6 +218,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
       })}
       {showBusinesses && businessesWithCoords.map((biz) => {
         const bizIcon = bizIcons[biz.category] || bizIcons.water_refilling;
+        if (biz.name.includes("Sandy")) console.log("[Sandy] bizIcon:", bizIcon, "category:", biz.category, "bizIcons:", Object.keys(bizIcons), "water_refilling:", bizIcons.water_refilling);
         return bizIcon && (
         <Marker key={biz.id} position={[biz.latitude ?? 0, biz.longitude ?? 0]} icon={bizIcon}>
           <Popup>
