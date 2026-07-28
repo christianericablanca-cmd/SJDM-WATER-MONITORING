@@ -16,7 +16,6 @@ declare global {
       getResponse: (widgetId: string) => string | undefined;
       remove: (widgetId: string) => void;
     };
-    onloadTurnstileCallback?: () => void;
   }
 }
 
@@ -31,45 +30,80 @@ interface TurnstileProps {
 export function Turnstile({ siteKey, onVerify, onExpire, onError, theme = "light" }: TurnstileProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
-  const loadedRef = useRef(false);
+  const renderedRef = useRef(false);
+
+  // Keep stable refs to callbacks so widget isn't re-rendered when they change
+  const onVerifyRef = useRef(onVerify);
+  const onExpireRef = useRef(onExpire);
+  const onErrorRef = useRef(onError);
+  onVerifyRef.current = onVerify;
+  onExpireRef.current = onExpire;
+  onErrorRef.current = onError;
 
   useEffect(() => {
-    if (!document.querySelector('script[src*="turnstile/v0/api.js"]')) {
+    if (renderedRef.current) return;
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    const scriptExists = document.querySelector<HTMLScriptElement>('script[src*="turnstile/v0/api.js"]');
+    if (!scriptExists) {
       const script = document.createElement("script");
-      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback";
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
       script.async = true;
       script.defer = true;
       document.head.appendChild(script);
     }
 
     const renderWidget = () => {
-      if (containerRef.current) {
-        if (widgetIdRef.current) {
-          try { window.turnstile.remove(widgetIdRef.current); } catch {}
-        }
-        widgetIdRef.current = window.turnstile.render(containerRef.current, {
-          sitekey: siteKey,
-          callback: onVerify,
-          "expired-callback": onExpire,
-          "error-callback": onError,
-          theme,
-        });
+      if (!container || renderedRef.current) return;
+      renderedRef.current = true;
+      widgetIdRef.current = window.turnstile.render(container, {
+        sitekey: siteKey,
+        callback: (token: string) => onVerifyRef.current(token),
+        "expired-callback": () => onExpireRef.current?.(),
+        "error-callback": () => onErrorRef.current?.(),
+        theme,
+      });
+    };
+
+    const checkLoaded = () => {
+      if (window.turnstile) {
+        renderWidget();
+      } else {
+        // Wait for the script to load
+        const interval = setInterval(() => {
+          if (window.turnstile) {
+            clearInterval(interval);
+            renderWidget();
+          }
+        }, 200);
+        // Cleanup interval after 15s
+        setTimeout(() => clearInterval(interval), 15000);
       }
     };
 
-    if (window.turnstile) {
-      renderWidget();
+    if (scriptExists) {
+      checkLoaded();
     } else {
-      window.onloadTurnstileCallback = renderWidget;
+      // Script was just created — wait for it to load
+      const interval = setInterval(() => {
+        if (window.turnstile) {
+          clearInterval(interval);
+          renderWidget();
+        }
+      }, 200);
+      setTimeout(() => clearInterval(interval), 15000);
     }
 
     return () => {
+      renderedRef.current = false;
       if (widgetIdRef.current) {
         try { window.turnstile.remove(widgetIdRef.current); } catch {}
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, onVerify, onExpire, onError, theme]);
+  }, [siteKey, theme]);
 
   return <div ref={containerRef} />;
 }
