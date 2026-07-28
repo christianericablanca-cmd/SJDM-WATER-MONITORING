@@ -51,6 +51,7 @@ export async function POST(request: Request) {
       longitude: lng,
       photo_url: photo_url || null,
       verified: true,
+      disabled: false,
     })
     .select()
     .single();

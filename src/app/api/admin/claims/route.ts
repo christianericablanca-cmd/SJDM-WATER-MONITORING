@@ -115,7 +115,7 @@ export async function PATCH(request: Request) {
         operating_hours: claim.operating_hours, coverage_area: claim.coverage_area, estimated_fee: claim.estimated_fee,
         latitude: claim.latitude ?? barCoords?.lat ?? null,
         longitude: claim.longitude ?? barCoords?.lng ?? null,
-        photo_url: claim.photo_url, verified: true,
+        photo_url: claim.photo_url, verified: true, disabled: false,
       });
     }
   } else if (action === "rejected") {
