@@ -494,6 +494,7 @@ export function WaterMap({ reports, businesses }: WaterMapProps) {
         const { data } = await supabase
           .from("businesses")
           .select("*")
+          .eq("disabled", false)
           .order("name");
         if (!data) return;
         const prevIds = knownBizIdsRef.current;

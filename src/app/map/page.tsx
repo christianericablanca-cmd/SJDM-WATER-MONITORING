@@ -15,6 +15,7 @@ export default async function MapPage() {
   const { data: businesses } = await supabase
     .from("businesses")
     .select("*")
+    .eq("disabled", false)
     .order("name");
 
   const totalReports = totalApproved ?? reports?.length ?? 0;
