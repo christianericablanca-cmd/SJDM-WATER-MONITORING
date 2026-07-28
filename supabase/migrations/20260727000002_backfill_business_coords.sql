@@ -49,3 +49,9 @@ UPDATE businesses SET
     WHEN 'Sto. Niño II' THEN 121.053 WHEN 'Tungkong Mangga' THEN 121.029
   END
 WHERE latitude IS NULL OR longitude IS NULL;
+
+-- Mark businesses from approved claims as verified
+UPDATE businesses SET verified = true WHERE verified = false AND EXISTS (
+  SELECT 1 FROM business_claims bc
+  WHERE bc.name = businesses.name AND bc.barangay = businesses.barangay AND bc.status = 'approved'
+);
