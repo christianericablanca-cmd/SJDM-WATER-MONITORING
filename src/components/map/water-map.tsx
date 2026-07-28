@@ -107,7 +107,7 @@ const MapInner = memo(function MapInner({ reports, businesses, reportIconCache, 
   const bizIcons = useMemo(() => {
     const cats = ["water_refilling", "water_tanker", "water_storage", "laundry_services"];
     const map: Record<string, L.DivIcon | null> = {};
-    for (const c of cats) { map[c] = createBusinessIcon(c); console.log("[bizIcons]", c, map[c] ? "created" : "null", map[c]?.options?.html?.slice(0,50)); }
+    for (const c of cats) { map[c] = createBusinessIcon(c); console.log("[bizIcons]", c, map[c] ? "created" : "null", typeof map[c]?.options?.html === "string" ? (map[c]?.options?.html as string).slice(0,50) : map[c]?.options?.html); }
     return map;
   }, []);
   const damIcon = useMemo(() => {
